@@ -3,232 +3,185 @@ import "./ExtraEdit.css";
 
 export default function ExtraEdit({ processedImages = [], setResults }) {
   const [selected, setSelected] = useState(null);
-
-  // 리사이즈 상태
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
-  const [originalRatio, setOriginalRatio] = useState(1);
-
-  // SVG 상태
-  const [svgColors, setSvgColors] = useState(3);
   const [color, setColor] = useState("#ffd331");
-  const [svgProgress, setSvgProgress] = useState(0);
-  const [svgLoading, setSvgLoading] = useState(false);
+  const [colorCount, setColorCount] = useState(3);
+  const [analyzeResult, setAnalyzeResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  // 키워드 분석 상태
-  const [keywords, setKeywords] = useState([]);
-  const [title, setTitle] = useState("");
-  const [analyzing, setAnalyzing] = useState(false);
-
-  // 이미지 선택
-  const selectImage = (img) => {
-    setSelected(img);
-    const imgObj = new Image();
-    imgObj.src = `data:image/png;base64,${img}`;
-    imgObj.onload = () => setOriginalRatio(imgObj.height / imgObj.width);
+  // ✅ 이미지 클릭 선택
+  const handleSelect = (img) => {
+    setSelected(img === selected ? null : img);
   };
 
-  // ✅ 리사이즈 (클라이언트 처리)
-const handleResize = async () => {
-  if (!selected || !width) return alert("이미지와 가로 크기를 입력하세요.");
-  const newHeight = Math.round(Number(width) * originalRatio);
-  setHeight(newHeight);
-
-  try {
+  // ✅ 리사이즈 (canvas 처리)
+  const handleResize = async () => {
+    if (!selected || !width) return alert("이미지와 가로 크기를 입력하세요.");
     const img = new Image();
     img.src = `data:image/png;base64,${selected}`;
     await new Promise((res) => (img.onload = res));
+
+    const ratio = img.height / img.width;
+    const newHeight = Math.round(Number(width) * ratio);
+    setHeight(newHeight);
 
     const canvas = document.createElement("canvas");
     canvas.width = Number(width);
     canvas.height = newHeight;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0, Number(width), newHeight);
-
     const resizedBase64 = canvas.toDataURL("image/png").split(",")[1];
 
-    // ✅ 기존 처리결과 덮어쓰기
     setResults((prev) => prev.map((r) => (r === selected ? resizedBase64 : r)));
-
     alert("리사이즈 완료! 선택된 이미지가 덮어쓰기 되었습니다.");
-  } catch (err) {
-    console.error("리사이즈 오류:", err);
-    alert("리사이즈 중 오류가 발생했습니다.");
-  }
-};
-  
-  // ✅ SVG 변환
-  const convertToSVG = async () => {
-    if (!selected) return alert("이미지를 선택하세요.");
-    setSvgLoading(true);
-    setSvgProgress(0);
-
-    const interval = setInterval(() => {
-      setSvgProgress((p) => (p >= 100 ? 100 : p + 10));
-    }, 300);
-
-    try {
-      const res = await fetch("/api/svg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: selected,
-          colorCount: svgColors,
-          color,
-        }),
-      });
-      const data = await res.json();
-      clearInterval(interval);
-      setSvgProgress(100);
-      if (data.result) {
-        setResults((prev) => [...prev, data.result]);
-        alert("SVG 변환 완료!");
-      } else alert(data.error || "SVG 변환 실패");
-    } catch (e) {
-      console.error(e);
-      alert("SVG 변환 오류 발생");
-    } finally {
-      setSvgLoading(false);
-    }
   };
 
-  // ✅ GIF 변환
-  const convertToGIF = async () => {
-    if (!selected) return alert("이미지를 선택하세요.");
-    const res = await fetch("/api/gif", {
+  // ✅ API 호출 헬퍼
+  const callApi = async (endpoint, payload) => {
+    setLoading(true);
+    setProgress(30);
+    const res = await fetch(`/api/${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64: selected }),
+      body: JSON.stringify(payload),
     });
+    setProgress(70);
     const data = await res.json();
-    if (data.result) setResults((prev) => [...prev, data.result]);
+    setProgress(100);
+    setTimeout(() => setProgress(0), 600);
+    setLoading(false);
+    return data;
+  };
+
+  // ✅ PNG → SVG 변환
+  const handleSvg = async () => {
+    if (!selected) return alert("이미지를 선택하세요!");
+    const res = await callApi("svg", {
+      imageBase64: selected,
+      color,
+      colorCount,
+    });
+    if (res.result) setResults((prev) => [...prev, res.result]);
+    else alert(res.error || "SVG 변환 실패");
+  };
+
+  // ✅ GIF 스타일 변환
+  const handleGif = async () => {
+    if (!selected) return alert("이미지를 선택하세요!");
+    const res = await callApi("gif", { imageBase64: selected });
+    if (res.result) setResults((prev) => [...prev, res.result]);
+    else alert(res.error || "GIF 변환 실패");
   };
 
   // ✅ 키워드 분석
-  const analyzeKeywords = async () => {
-    if (!selected) return alert("이미지를 선택하세요.");
-    setAnalyzing(true);
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64: selected }),
-    });
-    const data = await res.json();
-    if (data.keywords) {
-      setKeywords(data.keywords);
-      setTitle(data.title);
-    }
-    setAnalyzing(false);
+  const handleAnalyze = async () => {
+    if (!processedImages.length) return alert("분석할 이미지가 없습니다!");
+    const res = await callApi("analyze", { images: processedImages });
+    if (res.common_keywords) setAnalyzeResult(res);
+    else alert(res.error || "분석 실패");
   };
 
-  const copyKeywords = () => {
-    navigator.clipboard.writeText(`${title}\n${keywords.join(", ")}`);
-    alert("키워드와 제목이 복사되었습니다!");
+  // ✅ 결과 복사
+  const handleCopy = () => {
+    if (!analyzeResult) return;
+    const text = `
+📌 제목: ${analyzeResult.title}
+공통 키워드: ${analyzeResult.common_keywords.join(", ")}
+개별 키워드:
+${Object.entries(analyzeResult.individual_keywords)
+  .map(([k, v]) => `${k}: ${v.join(", ")}`)
+  .join("\n")}
+`;
+    navigator.clipboard.writeText(text);
+    alert("분석 결과가 복사되었습니다!");
   };
 
   return (
-    <section className="extra-container">
-      <h2 className="section-title">⚙️ 추가 기능</h2>
+    <section className="section-card">
+      <h2 className="section-title">🧩 추가 편집</h2>
 
-      {/* 썸네일 선택 */}
-      <div className="thumbnail-row">
-        {processedImages.map((img, idx) => (
+      {loading && (
+        <div className="progress-bar">
+          <div className="progress" style={{ width: `${progress}%` }} />
+        </div>
+      )}
+
+      {/* ✅ 이미지 선택 */}
+      <div className="thumb-grid">
+        {processedImages.map((img, i) => (
           <div
-            key={idx}
-            className={`thumb-wrapper ${selected === img ? "selected" : ""}`}
-            onClick={() => selectImage(img)}
+            key={i}
+            className={`thumb-box ${selected === img ? "selected" : ""}`}
+            onClick={() => handleSelect(img)}
           >
-            <img src={`data:image/png;base64,${img}`} alt={`img-${idx}`} />
+            <img src={`data:image/png;base64,${img}`} alt={`결과 ${i}`} />
           </div>
         ))}
       </div>
 
-      {/* 상단 두 개 */}
-      <div className="extra-row">
-        {/* 리사이즈 */}
-        <div className="extra-box">
-          <h3>📏 리사이즈</h3>
-          <label>
-            가로(px):
-            <input
-              type="number"
-              value={width}
-              onChange={(e) => setWidth(e.target.value)}
-              placeholder="예: 800"
-            />
-          </label>
-          <p>세로: {height || "자동 계산됨"}</p>
-          <button onClick={handleResize} className="extra-btn">
-            🔄 리사이즈
-          </button>
-        </div>
-
-        {/* PNG → SVG */}
-        <div className="extra-box">
-          <h3>🎨 PNG → SVG</h3>
-          <label>
-            색상 수 (1~6):
-            <input
-              type="number"
-              min="1"
-              max="6"
-              value={svgColors}
-              onChange={(e) => setSvgColors(e.target.value)}
-            />
-          </label>
-          <label>
-            대표 색상:
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-          </label>
-          <button onClick={convertToSVG} className="extra-btn">
-            🖼️ SVG 변환
-          </button>
-          {svgLoading && (
-            <div className="progress-bar">
-              <div style={{ width: `${svgProgress}%` }}></div>
-            </div>
-          )}
-        </div>
+      {/* ✅ 리사이즈 */}
+      <div className="resize-box">
+        <input
+          type="number"
+          placeholder="가로 크기(px)"
+          value={width}
+          onChange={(e) => setWidth(e.target.value)}
+        />
+        <button onClick={handleResize}>리사이즈</button>
       </div>
 
-      {/* 하단 두 개 */}
-      <div className="extra-row">
-        {/* GIF */}
-        <div className="extra-box gif-box">
-          <h3>🎞️ GIF 스타일 변환</h3>
-          <p className="desc">
-            선택된 이미지를 부드러운 잔상과 빛효과가 있는 GIF 스타일로 바꿉니다.
-          </p>
-          <button onClick={convertToGIF} className="extra-btn">
-            ✨ GIF 변환
-          </button>
-        </div>
+      {/* ✅ SVG 변환 */}
+      <div className="svg-box">
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+        />
+        <select
+          value={colorCount}
+          onChange={(e) => setColorCount(Number(e.target.value))}
+        >
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <option key={n} value={n}>
+              {n}색
+            </option>
+          ))}
+        </select>
+        <button onClick={handleSvg}>SVG 변환</button>
+      </div>
 
-        {/* 키워드 분석 */}
-        <div className="extra-box keyword-box">
-          <h3>🧠 키워드 분석</h3>
-          <button
-            onClick={analyzeKeywords}
-            disabled={analyzing}
-            className="extra-btn"
-          >
-            {analyzing ? "분석 중..." : "🔍 분석 시작"}
-          </button>
-          {keywords.length > 0 && (
-            <div className="keyword-results">
+      {/* ✅ GIF 변환 */}
+      <div className="gif-box">
+        <div className="gif-desc">
+          🌟 선택된 이미지를 움직이는 느낌의 GIF 스타일로 변환합니다.
+        </div>
+        <button onClick={handleGif}>GIF 생성</button>
+      </div>
+
+      {/* ✅ 키워드 분석 */}
+      <div className="analyze-box">
+        <div className="left">
+          <button onClick={handleAnalyze}>키워드 분석</button>
+        </div>
+        <div className="right">
+          {analyzeResult && (
+            <div className="analyze-result">
+              <h4>📌 {analyzeResult.title}</h4>
               <p>
-                <strong>제목:</strong> {title}
+                <b>공통:</b> {analyzeResult.common_keywords.join(", ")}
               </p>
-              <p>
-                <strong>키워드:</strong> {keywords.join(", ")}
-              </p>
-              <button onClick={copyKeywords} className="copy-btn">
-                📋 복사
-              </button>
+              <ul>
+                {Object.entries(analyzeResult.individual_keywords).map(
+                  ([key, val]) => (
+                    <li key={key}>
+                      {key}: {val.join(", ")}
+                    </li>
+                  )
+                )}
+              </ul>
+              <button onClick={handleCopy}>복사</button>
             </div>
           )}
         </div>
