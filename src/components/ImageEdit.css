@@ -1,154 +1,25 @@
-.section-box {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(255, 211, 49, 0.15);
-  padding: 40px;
-  width: 90%;
-  max-width: 900px;
-  margin: 40px auto;
-  text-align: center;
-}
-
-/* 🟡 제목 */
-.section-box h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #444;
-  margin-bottom: 20px;
-}
-
-/* 🔸 전체선택 / 해제 / 삭제 (작게) */
-.edit-controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 25px;
-}
-
-.edit-controls button {
-  background: #fff6b0;
-  border: 1px solid #ffd331;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.edit-controls button:hover {
-  background: #fff1a0;
-  transform: translateY(-1px);
-}
-
-/* 🧩 편집 기능 섹션 제목 */
-.edit-section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 18px;
-}
-
-/* 🟡 편집 기능 버튼 (크게 2x2) */
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  justify-items: center;
-  margin-bottom: 25px;
-}
-
-.action-grid button {
-  background: #ffd331;
-  border: none;
-  border-radius: 12px;
-  padding: 32px 0;
-  width: 100%;
-  max-width: 350px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #333;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(255, 211, 49, 0.25);
-}
-
-.action-grid button:hover {
-  background: #ffe98c;
-  transform: translateY(-3px);
-}
-
-/* 🖼️ 썸네일 */
-.thumbnail-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 20px;
-}
-
 .thumb-wrapper {
   position: relative;
-  border: 2px solid transparent;
   border-radius: 8px;
   overflow: hidden;
-  width: 120px;
-  height: 120px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .thumb-wrapper.selected {
-  border-color: #ffd331;
-  transform: scale(1.05);
+  border: 3px solid #000;
+  transform: scale(1.03);
 }
 
 .thumb-image {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  display: block;
+  border-radius: 6px;
 }
 
-.thumb-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 211, 49, 0.5);
-  color: white;
-  font-size: 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-}
-
-/* 🕐 로딩 문구 */
-.loading {
-  color: #555;
-  font-weight: 600;
-  margin-bottom: 15px;
-}
-
-/* 📱 반응형 */
-@media (max-width: 700px) {
-  .action-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .action-grid button {
-    width: 90%;
-    padding: 24px 0;
-  }
-
-  .edit-controls {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .edit-controls button {
-    width: 70%;
-  }
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
 }
