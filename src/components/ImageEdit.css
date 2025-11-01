@@ -43,3 +43,66 @@
     padding: 20px 0;
   }
 }
+
+/* ✅ 썸네일 목록 */
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  justify-items: center;
+  margin-bottom: 24px;
+}
+
+.thumb-wrapper {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  overflow: hidden;
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.thumb-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-wrapper.selected {
+  border: 3px solid #ffd331;
+  box-shadow: 0 0 10px rgba(255, 211, 49, 0.4);
+}
+
+.thumb-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 211, 49, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  color: white;
+  font-weight: bold;
+}
+
+/* ✅ 로딩 텍스트 */
+.loading {
+  color: #777;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  animation: fade 1s infinite alternate;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
