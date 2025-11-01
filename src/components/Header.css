@@ -1,0 +1,43 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff568;
+  padding: 14px 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.logo {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.header-right button {
+  margin-left: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-login {
+  background: white;
+  color: #444;
+  padding: 8px 14px;
+}
+
+.btn-upgrade {
+  background: #ffd331;
+  color: #333;
+  padding: 8px 14px;
+}
+
+.btn-login:hover {
+  background: #f7f7f7;
+}
+
+.btn-upgrade:hover {
+  background: #ffeb6b;
+}
