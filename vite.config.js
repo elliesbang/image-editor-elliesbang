@@ -1,8 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// ✅ Cloudflare Pages용 상대 경로 설정
 export default defineConfig({
   plugins: [react()],
-  base: "./", // ⚠️ 이 한 줄이 핵심!
+  base: "./", // ✅ 꼭 넣어야 Cloudflare Pages에서 상대경로 인식
 });
