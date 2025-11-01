@@ -57,7 +57,6 @@ export default function ProcessResult({ results = [] }) {
         <button onClick={handleSelectAll}>전체 선택</button>
         <button onClick={handleDeselectAll}>전체 해제</button>
         <button onClick={handleDeleteAll}>전체 삭제</button>
-        <button onClick={handleDownloadAll}>전체 저장</button>
       </div>
 
       {/* ✅ 썸네일 */}
@@ -91,6 +90,14 @@ export default function ProcessResult({ results = [] }) {
           ))
         )}
       </div>
+
+      {results.length > 0 && (
+        <div className="download-all-wrapper">
+          <button className="download-all" onClick={handleDownloadAll}>
+            전체 다운로드
+          </button>
+        </div>
+      )}
     </section>
   );
 }

@@ -37,8 +37,7 @@ export default function Footer() {
         </div>
 
         <p className="footer-text">
-          ⓒ 2025 <strong>엘리의방 (Ellie’s Bang)</strong>. All rights reserved. <br />
-          Designed & Developed by <strong>Ellie Studio</strong>
+          © 엘리의방 2025 · Designed & Developed by <strong>Ellie Studio</strong>
         </p>
       </div>
 
