@@ -8,95 +8,71 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
   // ✅ 이미지 선택 토글
   const toggleSelect = (img) => {
     setSelectedImages((prev) =>
-      prev.includes(img)
-        ? prev.filter((i) => i !== img)
-        : [...prev, img]
+      prev.includes(img) ? prev.filter((i) => i !== img) : [...prev, img]
     );
   };
 
-  // ✅ 전체 선택 / 해제
-  const handleSelectAll = () => {
-    setSelectedImages([...uploadedImages]);
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedImages([]);
-  };
-
+  // ✅ 전체 선택 / 해제 / 삭제
+  const handleSelectAll = () => setSelectedImages([...uploadedImages]);
+  const handleDeselectAll = () => setSelectedImages([]);
   const handleDeleteAll = () => {
     if (window.confirm("선택된 이미지를 모두 삭제하시겠습니까?")) {
       setSelectedImages([]);
     }
   };
 
-  // ✅ 공통 API 호출 함수
-  const processImage = async (endpoint, img) => {
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: img }),
-      });
-      const data = await res.json();
-      if (data.image_base64) return data.image_base64;
-      if (data.data?.[0]?.b64_json) return data.data[0].b64_json;
-      return null;
-    } catch (err) {
-      console.error(`${endpoint} 처리 오류:`, err);
-      return null;
+  // ✅ Base64 → Blob 변환
+  const base64ToBlob = (base64) => {
+    const byteString = atob(base64.split(",")[1] || base64);
+    const mimeString = base64.includes("data:")
+      ? base64.split(":")[1].split(";")[0]
+      : "image/png";
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
     }
+    return new Blob([ab], { type: mimeString });
   };
 
-  // ✅ 처리 버튼들
-  const handleRemoveBg = async () => {
+  // ✅ OpenAI API 호출
+  const callOpenAI = async (img, prompt = "배경을 제거하세요") => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    const formData = new FormData();
+    const blob = base64ToBlob(img);
+    formData.append("image", blob, "input.png");
+    formData.append("model", "gpt-image-1");
+    formData.append("prompt", prompt);
+
+    const res = await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (data?.data?.[0]?.b64_json) return data.data[0].b64_json;
+    console.error("OpenAI 응답 오류:", data);
+    return null;
+  };
+
+  // ✅ 이미지 처리
+  const handleProcess = async (type) => {
     if (!selectedImages.length) return alert("이미지를 선택해주세요!");
     setLoading(true);
     const newResults = [];
 
     for (const img of selectedImages) {
-      const result = await processImage("/api/remove-bg", img);
-      if (result) newResults.push(result);
-    }
+      let prompt = "배경을 제거하세요";
+      if (type === "crop") prompt = "중심 피사체만 남기고 크롭하세요";
+      if (type === "removeBgCrop")
+        prompt = "배경을 제거하고 피사체만 크롭하세요";
+      if (type === "denoise")
+        prompt = "이미지의 노이즈를 제거하고 선명하게 만드세요";
 
-    setResults((prev) => [...prev, ...newResults]);
-    setLoading(false);
-  };
-
-  const handleCrop = async () => {
-    if (!selectedImages.length) return alert("이미지를 선택해주세요!");
-    setLoading(true);
-    const newResults = [];
-
-    for (const img of selectedImages) {
-      const result = await processImage("/api/crop", img);
-      if (result) newResults.push(result);
-    }
-
-    setResults((prev) => [...prev, ...newResults]);
-    setLoading(false);
-  };
-
-  const handleRemoveBgCrop = async () => {
-    if (!selectedImages.length) return alert("이미지를 선택해주세요!");
-    setLoading(true);
-    const newResults = [];
-
-    for (const img of selectedImages) {
-      const result = await processImage("/api/remove-bg-crop", img);
-      if (result) newResults.push(result);
-    }
-
-    setResults((prev) => [...prev, ...newResults]);
-    setLoading(false);
-  };
-
-  const handleDenoise = async () => {
-    if (!selectedImages.length) return alert("이미지를 선택해주세요!");
-    setLoading(true);
-    const newResults = [];
-
-    for (const img of selectedImages) {
-      const result = await processImage("/api/denoise", img);
+      const result = await callOpenAI(img, prompt);
       if (result) newResults.push(result);
     }
 
@@ -108,21 +84,25 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
     <section className="section-box">
       <h2>🧩 이미지 편집</h2>
 
-      {loading && <p className="loading">이미지 처리 중입니다...</p>}
+      {loading && <p className="loading">이미지 처리 중입니다... 잠시만 기다려주세요.</p>}
 
+      {/* ✅ 전체 선택/해제/삭제 버튼 */}
       <div className="edit-controls">
         <button onClick={handleSelectAll}>전체 선택</button>
         <button onClick={handleDeselectAll}>전체 해제</button>
         <button onClick={handleDeleteAll}>전체 삭제</button>
       </div>
 
-      <div className="action-buttons">
-        <button onClick={handleRemoveBg}>배경 제거</button>
-        <button onClick={handleCrop}>크롭</button>
-        <button onClick={handleRemoveBgCrop}>배경 제거 + 크롭</button>
-        <button onClick={handleDenoise}>노이즈 제거</button>
+      {/* ✅ 편집 기능 2x2 버튼 */}
+      <h3 className="edit-section-title">편집 기능</h3>
+      <div className="action-grid">
+        <button onClick={() => handleProcess("removeBg")}>🧹 배경 제거</button>
+        <button onClick={() => handleProcess("crop")}>✂️ 크롭</button>
+        <button onClick={() => handleProcess("removeBgCrop")}>🪄 배경 제거 + 크롭</button>
+        <button onClick={() => handleProcess("denoise")}>✨ 노이즈 제거</button>
       </div>
 
+      {/* ✅ 이미지 썸네일 목록 */}
       <div className="thumbnail-grid">
         {uploadedImages.map((img, idx) => (
           <div
