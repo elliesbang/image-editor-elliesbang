@@ -1,86 +1,99 @@
 .section-box {
-  background: #fffbea;
+  background: #fffef6;
   border-radius: 20px;
   padding: 40px;
   margin: 40px auto;
   width: 90%;
   max-width: 1000px;
-  text-align: center;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
-.result-controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+h2 {
+  font-family: "Noto Sans KR", sans-serif;
+  color: #333;
+  text-align: center;
   margin-bottom: 20px;
 }
 
+/* 🔘 컨트롤 버튼 */
+.result-controls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
 .result-controls button {
-  background-color: #ffd331;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.result-controls button:hover {
-  background-color: #ffcc00;
-}
-
-.result-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
-  justify-items: center;
-}
-
-.result-item {
-  background: #fff;
-  border: 2px solid #ffd331;
-  border-radius: 16px;
-  padding: 10px;
-  text-align: center;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.result-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.result-item.selected {
-  border: 3px solid #333;
-}
-
-.result-thumb {
-  width: 100%;
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-.result-meta {
-  margin-top: 10px;
-}
-
-.result-meta button {
-  background: #ffd331;
+  background-color: #fff4b2;
   border: none;
   border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 12px;
-  margin: 0 3px;
+  padding: 8px 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: 0.2s;
 }
 
-.result-meta button:hover {
-  background: #ffcc00;
+.result-controls button:hover {
+  background-color: #ffe985;
 }
 
-.no-result {
+/* 🖼️ 썸네일 그리드 */
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px;
+  justify-items: center;
+}
+
+.result-thumb {
+  position: relative;
+  border: 2px solid #ffd331;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.result-thumb:hover {
+  transform: scale(1.03);
+}
+
+.result-thumb.selected {
+  border: 3px solid #000;
+}
+
+/* 썸네일 이미지 */
+.result-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 🧁 저장 버튼 */
+.save-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 211, 49, 0.9);
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.result-thumb:hover .save-btn {
+  opacity: 1;
+}
+
+.empty {
+  text-align: center;
   color: #777;
-  margin-top: 20px;
+  font-size: 15px;
+  font-weight: 500;
 }
