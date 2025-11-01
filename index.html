@@ -4,13 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>엘리의방 이미지 에디터</title>
+
+    <!-- 한글 폰트 -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap"
     />
+
+    <!-- ✅ Vite 빌드 후 자동 생성된 CSS 경로를 상대경로로 지정 -->
+    <link rel="stylesheet" href="./assets/style.css" />
   </head>
+
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ✅ 배포용: Vite가 빌드 후 ./assets/index.js 로 번들 생성 -->
+    <script type="module" crossorigin src="./assets/index.js"></script>
   </body>
 </html>
