@@ -1,35 +1,83 @@
 .image-edit-section {
-  margin-top: 30px;
+  margin-top: 40px;
   text-align: center;
 }
 
-.image-edit-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  justify-items: center;
-  margin-top: 15px;
-  padding: 0 10px;
+.section-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(255, 211, 49, 0.15);
+  padding: 40px;
+  width: 90%;
+  max-width: 900px;
+  margin: 40px auto;
+  text-align: center;
 }
 
-/* 버튼 크기 축소 */
-.image-edit-buttons button {
-  background-color: #fef568; /* 엘리의방 노랑 */
-  border: none;
-  border-radius: 10px;
-  width: 90%;
-  min-height: 60px; /* ✅ 높이 크게 줄임 */
-  font-size: 14px; /* ✅ 폰트 작게 */
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 24px;
+}
+
+/* 🔹 상단 보조버튼 (전체 선택 / 전체 해제 / 전체 삭제) */
+.top-control-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.top-control-buttons button {
+  background: #fff6b0;
+  border: 1px solid #ffd331;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
   font-weight: 600;
+  color: #555;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 8px 5px; /* ✅ 내부 여백 줄임 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.top-control-buttons button:hover {
+  background: #fff1a0;
+  transform: translateY(-1px);
+}
+
+/* 🔸 하단 주요 버튼 (배경제거 / 크롭 / 배경제거+크롭 / 노이즈 제거) */
+.image-edit-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}
+
+.image-edit-buttons button {
+  background: #ffd331; /* 💛 엘리의방 노랑 */
+  border: none;
+  border-radius: 10px;
+  padding: 20px 10px;
+  width: 180px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 6px rgba(255, 211, 49, 0.25);
 }
 
 .image-edit-buttons button:hover {
-  background-color: #ffe985;
-  transform: scale(1.02);
+  background: #ffe98c;
+  transform: translateY(-2px);
+}
+
+/* ✨ 설명 문구 */
+.edit-note {
+  margin-top: 25px;
+  color: #777;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 600px) {
@@ -38,7 +86,15 @@
   }
 
   .image-edit-buttons button {
-    width: 95%;
-    min-height: 55px;
+    width: 90%;
+  }
+
+  .top-control-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .top-control-buttons button {
+    width: 80%;
   }
 }
