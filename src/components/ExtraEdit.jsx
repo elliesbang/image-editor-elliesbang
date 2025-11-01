@@ -28,26 +28,35 @@ export default function ExtraEdit({ processedImages = [], setResults }) {
     imgObj.onload = () => setOriginalRatio(imgObj.height / imgObj.width);
   };
 
-  // ✅ 리사이즈
-  const handleResize = async () => {
-    if (!selected || !width) return alert("이미지와 가로 크기를 입력하세요.");
-    const newHeight = Math.round(Number(width) * originalRatio);
-    setHeight(newHeight);
+  // ✅ 리사이즈 (클라이언트 처리)
+const handleResize = async () => {
+  if (!selected || !width) return alert("이미지와 가로 크기를 입력하세요.");
+  const newHeight = Math.round(Number(width) * originalRatio);
+  setHeight(newHeight);
 
-    const res = await fetch("/api/resize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64: selected, width, height: newHeight }),
-    });
-    const data = await res.json();
-    if (data.result) {
-      setResults((prev) =>
-        prev.map((r) => (r === selected ? data.result : r))
-      );
-      alert("리사이즈 완료! 선택된 이미지가 덮어쓰기 되었습니다.");
-    }
-  };
+  try {
+    const img = new Image();
+    img.src = `data:image/png;base64,${selected}`;
+    await new Promise((res) => (img.onload = res));
 
+    const canvas = document.createElement("canvas");
+    canvas.width = Number(width);
+    canvas.height = newHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, Number(width), newHeight);
+
+    const resizedBase64 = canvas.toDataURL("image/png").split(",")[1];
+
+    // ✅ 기존 처리결과 덮어쓰기
+    setResults((prev) => prev.map((r) => (r === selected ? resizedBase64 : r)));
+
+    alert("리사이즈 완료! 선택된 이미지가 덮어쓰기 되었습니다.");
+  } catch (err) {
+    console.error("리사이즈 오류:", err);
+    alert("리사이즈 중 오류가 발생했습니다.");
+  }
+};
+  
   // ✅ SVG 변환
   const convertToSVG = async () => {
     if (!selected) return alert("이미지를 선택하세요.");
