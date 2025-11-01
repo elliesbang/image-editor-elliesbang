@@ -1,29 +1,17 @@
- import React, { useState } from "react";
+import React, { useState } from "react";
 import "./ImageEdit.css";
 
 export default function ImageEdit({ uploadedImages = [], setResults }) {
   const [selectedImages, setSelectedImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // ✅ 이미지 선택 토글 (인덱스 기준으로 변경)
+  // ✅ 이미지 선택 토글 (인덱스 기반)
   const toggleSelect = (index) => {
     setSelectedImages((prev) =>
       prev.includes(index)
         ? prev.filter((i) => i !== index)
         : [...prev, index]
     );
-  };
-
-  // ✅ 전체 선택 / 해제 / 삭제
-  const handleSelectAll = () =>
-    setSelectedImages(uploadedImages.map((_, idx) => idx));
-
-  const handleDeselectAll = () => setSelectedImages([]);
-
-  const handleDeleteAll = () => {
-    if (window.confirm("선택된 이미지를 모두 삭제하시겠습니까?")) {
-      setSelectedImages([]);
-    }
   };
 
   // ✅ Base64 → Blob 변환
@@ -52,9 +40,7 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
 
       const res = await fetch("https://api.openai.com/v1/images/edits", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
+        headers: { Authorization: `Bearer ${apiKey}` },
         body: formData,
       });
 
@@ -68,9 +54,13 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
     }
   };
 
-  // ✅ 이미지 처리
+  // ✅ 이미지 처리 (선택된 이미지만)
   const handleProcess = async (type) => {
-    if (!selectedImages.length) return alert("이미지를 선택해주세요!");
+    if (!selectedImages.length) {
+      alert("편집할 이미지를 선택해주세요!");
+      return;
+    }
+
     setLoading(true);
     const newResults = [];
 
@@ -93,47 +83,25 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
     <section className="section-box">
       <h2>🧩 이미지 편집</h2>
 
-      {loading && (
-        <p className="loading">이미지 처리 중입니다... 잠시만 기다려주세요.</p>
-      )}
+      {loading && <p className="loading">이미지 처리 중입니다... 잠시만 기다려주세요.</p>}
 
-      {/* ✅ 전체 선택/해제/삭제 버튼 */}
-      <div className="edit-controls">
-        <button onClick={handleSelectAll}>전체 선택</button>
-        <button onClick={handleDeselectAll}>전체 해제</button>
-        <button onClick={handleDeleteAll}>전체 삭제</button>
-      </div>
-
-      {/* ✅ 편집 기능 2x2 버튼 */}
-      <h3 className="edit-section-title">편집 기능</h3>
+      {/* ✅ 편집 기능 버튼 */}
       <div className="action-grid">
-        <button
-          disabled={loading}
-          onClick={() => handleProcess("removeBg")}
-        >
+        <button onClick={() => handleProcess("removeBg")} disabled={loading}>
           🧹 배경 제거
         </button>
-        <button
-          disabled={loading}
-          onClick={() => handleProcess("crop")}
-        >
+        <button onClick={() => handleProcess("crop")} disabled={loading}>
           ✂️ 크롭
         </button>
-        <button
-          disabled={loading}
-          onClick={() => handleProcess("removeBgCrop")}
-        >
+        <button onClick={() => handleProcess("removeBgCrop")} disabled={loading}>
           🪄 배경 제거 + 크롭
         </button>
-        <button
-          disabled={loading}
-          onClick={() => handleProcess("denoise")}
-        >
+        <button onClick={() => handleProcess("denoise")} disabled={loading}>
           ✨ 노이즈 제거
         </button>
       </div>
 
-      {/* ✅ 이미지 썸네일 목록 */}
+      {/* ✅ 업로드된 이미지 목록 */}
       <div className="thumbnail-grid">
         {uploadedImages.map((img, idx) => (
           <div
@@ -148,9 +116,6 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
               alt={`업로드된 이미지 ${idx + 1}`}
               className="thumb-image"
             />
-            {selectedImages.includes(idx) && (
-              <div className="thumb-overlay">✔</div>
-            )}
           </div>
         ))}
       </div>
