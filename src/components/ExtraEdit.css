@@ -10,10 +10,10 @@
 }
 
 .section-title {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: #444;
-  margin-bottom: 24px;
+  margin-bottom: 30px;
 }
 
 /* 진행바 */
@@ -36,7 +36,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 .thumb-box {
   border: 2px solid transparent;
@@ -52,12 +52,22 @@
   display: block;
 }
 
-/* 입력 + 버튼 박스 */
-.resize-box,
-.svg-box,
-.gif-box,
-.analyze-box {
-  margin: 20px 0;
+/* 섹션 */
+.edit-section {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+  margin-top: 30px;
+  text-align: center;
+}
+.edit-section h3 {
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+}
+.edit-section p {
+  color: #777;
+  font-size: 0.95rem;
+  margin-bottom: 16px;
 }
 
 button {
@@ -77,10 +87,21 @@ button:hover {
 }
 
 input[type="color"],
-select,
 input[type="number"] {
   margin-right: 8px;
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ddd;
+}
+
+/* SVG 미리보기 */
+.svg-preview {
+  margin-top: 16px;
+}
+.svg-display {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  margin-top: 12px;
+  padding: 10px;
+  background: #fafafa;
 }
