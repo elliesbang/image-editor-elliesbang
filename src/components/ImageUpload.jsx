@@ -4,6 +4,7 @@ import "./ImageUpload.css";
 export default function ImageUpload() {
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
 
   // ✅ 이미지 업로드
   const handleUpload = (e) => {
@@ -13,6 +14,34 @@ export default function ImageUpload() {
       file,
     }));
     setImages((prev) => [...prev, ...newImages]);
+
+    const readers = files.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result;
+            if (typeof result === "string") {
+              const base64 = result.includes(",")
+                ? result.split(",")[1]
+                : result;
+              resolve(base64);
+            } else {
+              resolve("");
+            }
+          };
+          reader.onerror = () => reject(new Error("파일을 읽는 데 실패했습니다."));
+          reader.readAsDataURL(file);
+        })
+    );
+
+    Promise.all(readers)
+      .then((base64Images) => {
+        setUploadedImages((prev) => [...prev, ...base64Images]);
+      })
+      .catch(() => {
+        setUploadedImages((prev) => [...prev]);
+      });
   };
 
   // ✅ 이미지 선택/해제
@@ -24,14 +53,19 @@ export default function ImageUpload() {
 
   // ✅ 개별 삭제
   const handleRemove = (id) => {
+    const indexToRemove = images.findIndex((img) => img.id === id);
     setImages((prev) => prev.filter((img) => img.id !== id));
     setSelected((prev) => prev.filter((sid) => sid !== id));
+    if (indexToRemove !== -1) {
+      setUploadedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    }
   };
 
   // ✅ 전체 삭제
   const handleClearAll = () => {
     setImages([]);
     setSelected([]);
+    setUploadedImages([]);
   };
 
   // ✅ 전체 선택
@@ -94,6 +128,18 @@ export default function ImageUpload() {
               ✕
             </button>
           </div>
+        ))}
+      </div>
+
+      {/* ✅ 업로드된 이미지 썸네일 표시 */}
+      <div className="upload-thumbs">
+        {uploadedImages.map((img, i) => (
+          <img
+            key={i}
+            src={`data:image/png;base64,${img}`}
+            alt={`업로드된 이미지 ${i + 1}`}
+            className="thumb"
+          />
         ))}
       </div>
     </div>

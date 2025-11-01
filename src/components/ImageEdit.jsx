@@ -100,7 +100,7 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
       </div>
 
       {/* 🔸 이미지 편집 버튼 (2x2 Grid) */}
-      <div className="image-edit-buttons">
+      <div className="action-grid">
         <button onClick={() => handleProcess("removeBg")}>배경제거</button>
         <button onClick={() => handleProcess("crop")}>크롭</button>
         <button onClick={() => handleProcess("removeBgCrop")}>

@@ -53,7 +53,7 @@ export default function ProcessResult({ results = [] }) {
       <h2>🎉 처리 결과</h2>
 
       {/* ✅ 컨트롤 버튼 */}
-      <div className="result-controls">
+      <div className="result-actions">
         <button onClick={handleSelectAll}>전체 선택</button>
         <button onClick={handleDeselectAll}>전체 해제</button>
         <button onClick={handleDeleteAll}>전체 삭제</button>
