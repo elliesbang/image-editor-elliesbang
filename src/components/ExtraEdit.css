@@ -1,0 +1,53 @@
+.section-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(255, 211, 49, 0.15);
+  padding: 40px;
+  width: 90%;
+  max-width: 900px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 24px;
+}
+
+.extra-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}
+
+.extra-btn {
+  background: #ffd331;
+  border: none;
+  border-radius: 10px;
+  padding: 20px 10px;
+  width: 180px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.extra-btn span {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.extra-btn:hover {
+  background: #ffe98c;
+  transform: translateY(-2px);
+}
+
+.extra-note {
+  margin-top: 25px;
+  color: #777;
+  font-size: 0.9rem;
+}
