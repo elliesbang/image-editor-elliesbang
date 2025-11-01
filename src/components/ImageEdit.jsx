@@ -99,15 +99,42 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
         ))}
       </div>
 
-      {/* ✅ 편집 버튼 */}
-      <div className="image-edit-buttons">
-        <button onClick={() => handleProcess("removeBg")}>🧹 배경 제거</button>
-        <button onClick={() => handleProcess("crop")}>✂️ 크롭</button>
-        <button onClick={() => handleProcess("removeBgCrop")}>
-          🪄 배경 제거 + 크롭
-        </button>
-        <button onClick={() => handleProcess("denoise")}>✨ 노이즈 제거</button>
-      </div>
-    </section>
-  );
+      /* 🔸 이미지 편집 버튼 (2x2 Grid) */
+.image-edit-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  justify-items: center;
+  margin-top: 24px;
+}
+
+.image-edit-buttons button {
+  background: #ffd331;
+  border: none;
+  border-radius: 10px;
+  padding: 18px 10px;
+  width: 200px;
+  height: 70px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 6px rgba(255, 211, 49, 0.25);
+}
+
+.image-edit-buttons button:hover {
+  background: #ffe98c;
+  transform: translateY(-2px);
+}
+
+/* 🔹 모바일 대응 (한 줄씩 정렬) */
+@media (max-width: 600px) {
+  .image-edit-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .image-edit-buttons button {
+    width: 90%;
+  }
 }
