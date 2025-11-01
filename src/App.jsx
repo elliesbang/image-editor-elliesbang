@@ -15,34 +15,76 @@ export default function App() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        fontFamily: "'Noto Sans KR', sans-serif",
       }}
     >
       {/* ✅ 헤더 */}
       <Header />
 
-      {/* ✅ 메인 콘텐츠 */}
+      {/* ✅ 메인 컨텐츠 */}
       <main
         style={{
+          width: "100%",
+          maxWidth: "1000px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          width: "100%",
-          maxWidth: "1000px",
-          padding: "40px 20px",
           gap: "40px",
+          padding: "40px 20px",
+          boxSizing: "border-box",
         }}
       >
-        {/* 1️⃣ 이미지 업로드 섹션 */}
-        <ImageUpload />
+        {/* 1️⃣ 이미지 업로드 */}
+        <section
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+            padding: "40px",
+            width: "100%",
+          }}
+        >
+          <ImageUpload />
+        </section>
 
-        {/* 2️⃣ 이미지 편집 섹션 */}
-        <ImageEdit />
+        {/* 2️⃣ 이미지 편집 */}
+        <section
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+            padding: "40px",
+            width: "100%",
+          }}
+        >
+          <ImageEdit />
+        </section>
 
-        {/* 3️⃣ 처리결과 섹션 */}
-        <ProcessResult />
+        {/* 3️⃣ 처리 결과 */}
+        <section
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+            padding: "40px",
+            width: "100%",
+          }}
+        >
+          <ProcessResult />
+        </section>
 
-        {/* 4️⃣ 추가 편집 섹션 */}
-        <ExtraEdit />
+        {/* 4️⃣ 추가 편집 */}
+        <section
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+            padding: "40px",
+            width: "100%",
+          }}
+        >
+          <ExtraEdit />
+        </section>
       </main>
 
       {/* ✅ 푸터 */}
