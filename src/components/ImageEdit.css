@@ -1,43 +1,81 @@
-.image-edit-section {
-  background: #fffef8;
-  border-radius: 16px;
-  padding: 40px 30px;
+.section-box {
+  background: #fffef6;
+  border-radius: 20px;
+  padding: 40px;
   margin: 40px auto;
-  max-width: 900px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+  width: 90%;
+  max-width: 1000px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
-.section-title {
-  font-size: 1.4rem;
+.loading {
   font-weight: 600;
-  color: #333;
-  margin-bottom: 20px;
+  color: #ff8800;
+  margin-bottom: 10px;
 }
 
-.edit-buttons {
+.edit-controls,
+.action-buttons {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
-.edit-btn {
-  background: #fff7b3;
-  border: 1px solid #e3c841;
-  border-radius: 10px;
-  padding: 12px 18px;
-  font-weight: 500;
+.edit-controls button,
+.action-buttons button {
+  background-color: #ffd331;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: 0.2s;
 }
 
-.edit-btn:hover {
-  background: #ffef70;
+.edit-controls button:hover,
+.action-buttons button:hover {
+  background-color: #ffcc00;
 }
 
-.edit-note {
-  font-size: 0.9rem;
-  color: #777;
-  text-align: center;
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  justify-items: center;
+}
+
+.thumb-wrapper {
+  position: relative;
+  border: 2px solid #ffd331;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.thumb-wrapper:hover {
+  transform: scale(1.03);
+}
+
+.thumb-wrapper.selected {
+  border: 3px solid #000;
+}
+
+.thumb-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 50%;
+  padding: 4px 6px;
+  font-size: 14px;
 }
