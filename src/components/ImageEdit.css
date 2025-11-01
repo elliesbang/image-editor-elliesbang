@@ -1,30 +1,33 @@
 /* 🔹 편집 기능 버튼 (배경제거 / 크롭 / 배경제거+크롭 / 노이즈 제거) */
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 16px;
   justify-items: center;
-  margin: 30px auto;
-  max-width: 600px;
+  margin: 16px auto 0;
+  width: 100%;
+  max-width: 360px;
 }
 
 .action-grid button {
-  background: #ffd331; /* 💛 엘리의방 노랑 */
+  background: #ffd331;
   border: none;
-  border-radius: 10px;
-  padding: 24px 10px;
-  width: 220px;
-  font-weight: 600;
-  font-size: 1.05rem;
+  border-radius: 16px;
+  width: 100%;
+  min-height: 60px;
+  font-weight: 700;
+  font-size: 1rem;
   color: #333;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 6px rgba(255, 211, 49, 0.25);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.action-grid button:hover {
+.action-grid button:hover,
+.action-grid button:focus-visible {
   background: #ffe98c;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .action-grid button:disabled {
@@ -33,61 +36,28 @@
 }
 
 /* ✨ 모바일 대응 */
-@media (max-width: 600px) {
+@media (max-width: 420px) {
   .action-grid {
     grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 601px) {
+  .action-grid {
+    max-width: 440px;
+    gap: 20px;
   }
 
   .action-grid button {
-    width: 90%;
-    padding: 20px 0;
+    min-height: 70px;
+    font-size: 1.05rem;
   }
 }
 
-/* ✅ 썸네일 목록 */
+/* ✅ 썸네일 목록 숨김 */
 .thumbnail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-  justify-items: center;
-  margin-bottom: 24px;
-}
-
-.thumb-wrapper {
-  position: relative;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  overflow: hidden;
-  width: 120px;
-  height: 120px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.thumb-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.thumb-wrapper.selected {
-  border: 3px solid #ffd331;
-  box-shadow: 0 0 10px rgba(255, 211, 49, 0.4);
-}
-
-.thumb-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 211, 49, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 2rem;
-  color: white;
-  font-weight: bold;
+  display: none !important;
 }
 
 /* ✅ 로딩 텍스트 */

@@ -1,50 +1,51 @@
 .footer {
-  background-color: #fff9d9;
-  border-top: 2px solid #ffd331;
+  background-color: #fffbe9;
   text-align: center;
-  padding: 40px 20px;
-  font-family: "Noto Sans KR", sans-serif;
-  margin-top: 80px;
+  padding: 16px 20px 32px;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #333;
 }
 
 .footer-inner {
-  max-width: 1000px;
+  max-width: 800px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .footer-logo {
-  font-size: 18px;
+  font-size: 1rem;
   font-weight: 600;
-  color: #444;
-  margin-bottom: 15px;
 }
 
 .footer-links {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 15px;
+  gap: 12px;
 }
 
 .footer-links button {
-  background: none;
+  background: rgba(255, 211, 49, 0.2);
   border: none;
-  font-size: 14px;
+  border-radius: 999px;
+  padding: 0 16px;
+  min-height: 44px;
+  font-size: 0.9rem;
   cursor: pointer;
   color: #333;
-  transition: color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.footer-links button:hover {
-  color: #ffd331;
-  text-decoration: underline;
+.footer-links button:hover,
+.footer-links button:focus-visible {
+  background: rgba(255, 211, 49, 0.4);
+  transform: translateY(-1px);
 }
 
 .footer-text {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.6;
+  font-size: 0.9rem;
   margin: 0;
 }
 
@@ -66,34 +67,35 @@
   background: white;
   width: 90%;
   max-width: 480px;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
   position: relative;
   animation: fadeIn 0.2s ease;
 }
 
 .modal-body h3 {
-  color: #444;
+  color: #333;
   margin-bottom: 10px;
 }
 
 .modal-body p {
-  font-size: 14px;
+  font-size: 0.9rem;
   color: #555;
   line-height: 1.6;
 }
 
 .modal-close {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   background: #ffd331;
   border: none;
-  border-radius: 5px;
-  padding: 5px 10px;
+  border-radius: 999px;
+  padding: 6px 14px;
   font-weight: 600;
   cursor: pointer;
+  min-height: 36px;
 }
 
 @keyframes fadeIn {
@@ -104,5 +106,19 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .footer {
+    padding: 20px 16px 28px;
+  }
+
+  .footer-logo {
+    font-size: 0.95rem;
+  }
+
+  .footer-text {
+    font-size: 0.85rem;
   }
 }
