@@ -5,18 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>엘리의방 이미지 에디터</title>
 
+    <!-- 한글 폰트 -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap"
     />
-    <!-- ✅ 빌드 후 생성되는 스타일시트 -->
-    <link rel="stylesheet" href="./assets/style.css" />
   </head>
-
   <body>
     <div id="root"></div>
 
-    <!-- ✅ 배포용으로 빌드된 JS 불러오기 -->
-    <script type="module" crossorigin src="./assets/index.js"></script>
+    <!-- ✅ 수정 포인트: 개발용 entry 파일을 직접 불러오게 -->
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
