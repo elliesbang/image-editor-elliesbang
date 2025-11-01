@@ -1,21 +1,29 @@
-import React from "react";
-import "./ImageEdit.css";
+const handleRemoveBg = async () => {
+  if (!selectedImages.length) {
+    alert("이미지를 선택해주세요!");
+    return;
+  }
 
-export default function ImageEdit() {
-  return (
-    <section className="image-edit-section">
-      <h2 className="section-title">🪄 이미지 편집</h2>
+  for (const img of selectedImages) {
+    try {
+      const res = await fetch("/api/remove-bg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: img }),
+      });
 
-      <div className="edit-buttons">
-        <button className="edit-btn">배경제거</button>
-        <button className="edit-btn">크롭</button>
-        <button className="edit-btn">배경제거 + 크롭</button>
-        <button className="edit-btn">노이즈 제거</button>
-      </div>
+      const data = await res.json();
 
-      <div className="edit-note">
-        <p>📌 각 버튼은 이미지 편집 API와 연결됩니다.</p>
-      </div>
-    </section>
-  );
-}
+      if (data.image_base64) {
+        setResults((prev) => [...prev, data.image_base64]);
+      } else if (data.data?.[0]?.b64_json) {
+        // OpenAI 형식인 경우
+        setResults((prev) => [...prev, data.data[0].b64_json]);
+      } else {
+        console.error("Unexpected API response", data);
+      }
+    } catch (err) {
+      console.error("배경제거 오류:", err);
+    }
+  }
+};
