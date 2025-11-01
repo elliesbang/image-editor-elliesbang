@@ -1,0 +1,43 @@
+.image-edit-section {
+  background: #fffef8;
+  border-radius: 16px;
+  padding: 40px 30px;
+  margin: 40px auto;
+  max-width: 900px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.edit-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.edit-btn {
+  background: #fff7b3;
+  border: 1px solid #e3c841;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: #ffef70;
+}
+
+.edit-note {
+  font-size: 0.9rem;
+  color: #777;
+  text-align: center;
+}
