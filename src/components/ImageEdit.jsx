@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import "./ImageEdit.css";
 
 export default function ImageEdit({ uploadedImages = [], setResults }) {
-  const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedImages, setSelectedImages] = useState([]); // 인덱스 기반 선택
   const [loading, setLoading] = useState(false);
 
-  // ✅ 이미지 선택 토글 (인덱스 기반)
+  // ✅ 이미지 클릭 시 선택/해제
   const toggleSelect = (index) => {
     setSelectedImages((prev) =>
       prev.includes(index)
@@ -65,7 +65,7 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
     const newResults = [];
 
     for (const index of selectedImages) {
-      const img = uploadedImages[index];
+      const img = uploadedImages[index]; // base64로 매칭
       let prompt = "배경을 제거하세요";
       if (type === "crop") prompt = "중심 피사체만 남기고 크롭하세요";
       if (type === "removeBgCrop") prompt = "배경을 제거하고 피사체만 크롭하세요";
@@ -83,7 +83,9 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
     <section className="section-box">
       <h2>🧩 이미지 편집</h2>
 
-      {loading && <p className="loading">이미지 처리 중입니다... 잠시만 기다려주세요.</p>}
+      {loading && (
+        <p className="loading">이미지 처리 중입니다... 잠시만 기다려주세요.</p>
+      )}
 
       {/* ✅ 편집 기능 버튼 */}
       <div className="action-grid">
