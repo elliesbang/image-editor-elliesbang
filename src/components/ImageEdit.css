@@ -8,37 +8,79 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
-.loading {
-  font-weight: 600;
-  color: #ff8800;
-  margin-bottom: 10px;
-}
-
-.edit-controls,
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
+h2 {
+  font-family: "Noto Sans KR", sans-serif;
+  color: #333;
+  text-align: center;
   margin-bottom: 20px;
 }
 
-.edit-controls button,
-.action-buttons button {
-  background-color: #ffd331;
+.loading {
+  text-align: center;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 20px;
+}
+
+/* 🔘 전체 선택/해제/삭제 버튼 */
+.edit-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.edit-controls button {
+  background-color: #fff4b2;
   border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: 6px;
+  padding: 8px 14px;
   font-weight: 600;
   cursor: pointer;
   transition: 0.2s;
 }
 
-.edit-controls button:hover,
-.action-buttons button:hover {
-  background-color: #ffcc00;
+.edit-controls button:hover {
+  background-color: #ffe985;
 }
 
+/* 🪄 편집 기능 2x2 버튼 */
+.edit-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #444;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+  justify-items: center;
+}
+
+.action-grid button {
+  width: 100%;
+  height: 120px;
+  font-size: 20px;
+  font-weight: 700;
+  border: none;
+  border-radius: 16px;
+  background: #ffd331;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.action-grid button:hover {
+  background: #ffcc00;
+  transform: translateY(-3px);
+}
+
+/* 🖼️ 썸네일 */
 .thumbnail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
