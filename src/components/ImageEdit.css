@@ -1,25 +1,45 @@
-.thumb-wrapper {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
+/* 🔹 편집 기능 버튼 (배경제거 / 크롭 / 배경제거+크롭 / 노이즈 제거) */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  justify-items: center;
+  margin: 30px auto;
+  max-width: 600px;
+}
+
+.action-grid button {
+  background: #ffd331; /* 💛 엘리의방 노랑 */
+  border: none;
+  border-radius: 10px;
+  padding: 24px 10px;
+  width: 220px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #333;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 3px 6px rgba(255, 211, 49, 0.25);
 }
 
-.thumb-wrapper.selected {
-  border: 3px solid #000;
-  transform: scale(1.03);
+.action-grid button:hover {
+  background: #ffe98c;
+  transform: translateY(-2px);
 }
 
-.thumb-image {
-  width: 100%;
-  display: block;
-  border-radius: 6px;
+.action-grid button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.thumbnail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
+/* ✨ 모바일 대응 */
+@media (max-width: 600px) {
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-grid button {
+    width: 90%;
+    padding: 20px 0;
+  }
 }
