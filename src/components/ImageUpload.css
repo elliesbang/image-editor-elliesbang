@@ -1,0 +1,94 @@
+.upload-container {
+  text-align: center;
+  width: 100%;
+}
+
+/* 버튼 영역 */
+.upload-actions {
+  margin-bottom: 20px;
+}
+
+.btn {
+  background: #fff7b3;
+  border: 1px solid #e3c841;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin: 0 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: #ffef70;
+}
+
+/* 업로드 박스 */
+.upload-box {
+  border: 2px dashed #f5d34c;
+  border-radius: 15px;
+  padding: 40px;
+  margin: 0 auto 30px;
+  background-color: #fffefc;
+  max-width: 600px;
+}
+
+.upload-label {
+  cursor: pointer;
+  color: #777;
+  font-size: 1rem;
+}
+
+/* 썸네일 그리드 */
+.thumbnail-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.thumbnail {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.thumbnail.selected {
+  border-color: #000; /* ✅ 선택 시 검정 테두리 */
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 🗑 삭제 버튼 (호버 시 표시) */
+.delete-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  display: none;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.thumbnail:hover .delete-btn {
+  display: block;
+}
+
+.delete-btn:hover {
+  background: #ff5252;
+  color: #fff;
+}
