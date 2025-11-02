@@ -23,6 +23,7 @@ function App() {
       <Header onLoginClick={() => setLoginOpen(true)} />
 
       <main className="app-main">
+        {/* 이미지 업로드 */}
         <section className="app-section">
           <div className="section-header">📁 이미지 업로드</div>
           <ImageUpload
@@ -32,26 +33,29 @@ function App() {
           />
         </section>
 
+        {/* 이미지 편집 */}
         <section className="app-section">
           <div className="section-header">🎨 이미지 편집</div>
           <ImageEditor selectedImage={selectedImage} />
         </section>
 
+        {/* 처리 결과 */}
         <section className="app-section">
           <div className="section-header">🎉 처리 결과</div>
           <ProcessResult
             images={images}
             selectedImage={selectedImage}
             setSelectedImage={setSelectedImage}
-            setSelectedResult={setSelectedResult}  // ✅ 결과 선택 연결
+            setSelectedResult={setSelectedResult} // ✅ 추가
           />
         </section>
 
+        {/* 추가 기능 */}
         <section className="app-section">
           <div className="section-header">⚙️ 추가 기능</div>
           <AdditionalEditor
-            selectedImage={selectedImage}         // 업로드 쪽 선택
-            selectedResult={selectedResult}       // 처리결과 쪽 선택
+            selectedUploadImage={selectedImage}  // 업로드 쪽 선택
+            selectedResultImage={selectedResult} // 처리 결과 쪽 선택
           />
         </section>
       </main>
