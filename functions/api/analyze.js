@@ -2,12 +2,15 @@ export const onRequestPost = async ({ request, env }) => {
   try {
     const { images = [] } = await request.json();
     if (!images.length)
-      return new Response(JSON.stringify({ error: "분석할 이미지가 없습니다." }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "분석할 이미지가 없습니다." }),
+        { status: 400 }
+      );
 
     const apiKey = env.OPENAI_API_KEY;
     const formData = new FormData();
 
-    // Base64를 파일로 변환하여 업로드
+    // Base64 → Blob 변환
     images.forEach((img, idx) => {
       const buffer = Uint8Array.from(atob(img), (c) => c.charCodeAt(0));
       formData.append(`image${idx}`, new Blob([buffer]), `image${idx}.png`);
@@ -21,16 +24,12 @@ export const onRequestPost = async ({ request, env }) => {
       다음 정보를 JSON으로 반환하세요.
 
       {
-        "common_keywords": ["공통 키워드 10개"],
-        "individual_keywords": {
-          "image1": ["개별 키워드 5개"],
-          "image2": ["개별 키워드 5개"],
-          ...
-        },
-        "title": "공통 키워드 기반 2~3개 조합 문장 제목"
+        "keywords": ["자연", "나무", "하늘", "햇살", ... (한글 위주 25개)"],
+        "title": "공통 키워드 2~3개 조합한 한글 제목"
       }
 
-      각 키워드는 영어, 한국어 혼용 가능하며 총합 25개 내외로 구성하세요.
+      ⚠️ 주의: 영어 키워드는 포함하지 말고,  
+      반드시 한글 25개 내외의 단어만 포함하세요.
       `
     );
 
@@ -41,17 +40,35 @@ export const onRequestPost = async ({ request, env }) => {
     });
 
     const data = await res.json();
-    const text = data?.output_text || data?.choices?.[0]?.message?.content;
-    const jsonStart = text.indexOf("{");
-    const jsonEnd = text.lastIndexOf("}");
-    const json = text.slice(jsonStart, jsonEnd + 1);
-    const result = JSON.parse(json);
+    // ✅ OpenAI Responses API의 실제 텍스트 위치
+    const outputText =
+      data.output?.[0]?.content?.[0]?.text ||
+      data.output_text ||
+      data.choices?.[0]?.message?.content ||
+      "";
 
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
-    });
+    // ✅ JSON 파싱
+    const jsonStart = outputText.indexOf("{");
+    const jsonEnd = outputText.lastIndexOf("}");
+    const jsonString = outputText.slice(jsonStart, jsonEnd + 1);
+    const parsed = JSON.parse(jsonString);
+
+    // ✅ 결과 정리 (안전 필터링)
+    const keywords = (parsed.keywords || [])
+      .filter((k) => /[가-힣]/.test(k)) // 한글만
+      .slice(0, 25);
+
+    const title = parsed.title || "이미지 키워드 분석";
+
+    return new Response(
+      JSON.stringify({ keywords, title }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   } catch (err) {
     console.error("Analyze Error:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
+    );
   }
 };
