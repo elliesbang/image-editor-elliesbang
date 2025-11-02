@@ -1,5 +1,0 @@
-name = "image-editor-elliesbang"
-compatibility_date = "2025-11-01"
-
-# ✅ Pages 프로젝트의 빌드 결과물 위치
-pages_build_output_dir = "./dist"
