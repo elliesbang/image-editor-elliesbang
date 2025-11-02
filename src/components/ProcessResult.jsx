@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import "./ProcessResult.css";
 
 export default function ProcessResult({ results = [] }) {
   const [selectedResults, setSelectedResults] = useState([]);
