@@ -106,25 +106,26 @@ button:hover, .btn:hover {
 }
 
 /* 🌼 썸네일 */
+
 .thumbnail-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  width: 100%;
+  grid-template-columns: repeat(5, 1fr); /* ✅ 5열 고정 */
+  gap: 4px;
+  justify-items: center;
 }
-.thumb-wrapper {
-  border: 2px solid transparent;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-}
-.thumb-wrapper.selected {
-  border-color: #ffd331;
-}
-.thumb-image {
+
+.thumb {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.thumb.selected {
+  border-color: #ffd331;
+  transform: scale(1.02);
 }
 
 /* 🌼 추가 기능 구조 */
