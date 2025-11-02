@@ -1,7 +1,14 @@
 import React from "react";
 
 export default function ImageEditor({ selectedImage }) {
-  // ✅ 이미지 URL 처리 (File or base64 모두 지원)
+  // ✅ blob → base64 변환 유틸
+  const blobToBase64 = (blob) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+      reader.readAsDataURL(blob);
+    });
+
   const getImageURL = () => {
     if (!selectedImage) return null;
     if (selectedImage.file) return URL.createObjectURL(selectedImage.file);
@@ -13,31 +20,27 @@ export default function ImageEditor({ selectedImage }) {
 
   const imgSrc = getImageURL();
 
-  // ✅ 서버 호출 함수
+  // ✅ 서버 호출 (base64 전송)
   const processImage = async (endpoint) => {
-    if (!imgSrc) {
-      alert("이미지를 먼저 선택해주세요!");
-      return;
-    }
+    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
 
     try {
       const blob = await fetch(imgSrc).then((r) => r.blob());
-      const file = new File([blob], "target.png", { type: "image/png" });
-      const formData = new FormData();
-      formData.append("image", file);
+      const base64 = await blobToBase64(blob);
 
       const res = await fetch(`/api/${endpoint}`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
       });
 
       if (!res.ok) throw new Error(`${endpoint} 요청 실패`);
       const data = await res.json();
 
-      // ✅ 처리 완료 후 이벤트 전달
+      // ✅ 결과 이벤트 전달
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
-          detail: { file, thumbnail: data.result },
+          detail: { file: blob, thumbnail: data.result },
         })
       );
 
@@ -50,7 +53,6 @@ export default function ImageEditor({ selectedImage }) {
 
   return (
     <div className="editor-section">
-      {/* ✅ 버튼은 항상 활성화 */}
       <div className="button-grid">
         <button className="btn" onClick={() => processImage("remove-bg")}>
           배경제거
@@ -66,7 +68,6 @@ export default function ImageEditor({ selectedImage }) {
         </button>
       </div>
 
-      {/* ✅ 이미지 없을 때 안내문 */}
       {!imgSrc && (
         <p
           style={{
@@ -76,7 +77,7 @@ export default function ImageEditor({ selectedImage }) {
             marginTop: "8px",
           }}
         >
-          이미지를 선택한 후 기능을 사용하세요.
+          이미지를 선택한 후 기능을 사용할 수 있습니다.
         </p>
       )}
     </div>
