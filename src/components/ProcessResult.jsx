@@ -1,9 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
 export default function ProcessResult({ results = [] }) {
   const [selectedResults, setSelectedResults] = useState([]);
+  const [localResults, setLocalResults] = useState(results);
+
+  // ✅ 리사이즈 등 로컬 처리 결과 자동 반영
+  useEffect(() => {
+    const handleProcessed = (e) => {
+      const { file, thumbnail } = e.detail;
+      // Blob → base64 변환 (ZIP 다운로드 호환)
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(",")[1];
+        setLocalResults((prev) => [...prev, base64]);
+      };
+      reader.readAsDataURL(file);
+    };
+    window.addEventListener("imageProcessed", handleProcessed);
+    return () => window.removeEventListener("imageProcessed", handleProcessed);
+  }, []);
+
+  // ✅ props로 받은 results도 동기화
+  useEffect(() => setLocalResults(results), [results]);
 
   // ✅ 이미지 선택 / 해제
   const toggleSelect = (img) => {
@@ -13,10 +33,11 @@ export default function ProcessResult({ results = [] }) {
   };
 
   // ✅ 전체 선택 / 해제 / 삭제
-  const handleSelectAll = () => setSelectedResults([...results]);
+  const handleSelectAll = () => setSelectedResults([...localResults]);
   const handleDeselectAll = () => setSelectedResults([]);
   const handleDeleteAll = () => {
     if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
+      setLocalResults([]);
       setSelectedResults([]);
     }
   };
@@ -31,10 +52,10 @@ export default function ProcessResult({ results = [] }) {
 
   // ✅ 전체 ZIP 다운로드
   const handleDownloadAll = async () => {
-    if (results.length === 0) return alert("저장할 이미지가 없습니다!");
+    if (localResults.length === 0) return alert("저장할 이미지가 없습니다!");
     const zip = new JSZip();
 
-    results.forEach((base64, idx) => {
+    localResults.forEach((base64, idx) => {
       const byteCharacters = atob(base64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -51,7 +72,7 @@ export default function ProcessResult({ results = [] }) {
   return (
     <div className="result-section">
       {/* ✅ 3컬럼 버튼 */}
-      {results.length > 0 && (
+      {localResults.length > 0 && (
         <div className="control-buttons">
           <button onClick={handleSelectAll}>전체 선택</button>
           <button onClick={handleDeselectAll}>전체 해제</button>
@@ -61,10 +82,10 @@ export default function ProcessResult({ results = [] }) {
 
       {/* ✅ 결과 썸네일 */}
       <div className="thumbnail-grid">
-        {results.length === 0 ? (
+        {localResults.length === 0 ? (
           <p className="empty">아직 처리된 이미지가 없습니다.</p>
         ) : (
-          results.map((img, idx) => (
+          localResults.map((img, idx) => (
             <div
               key={idx}
               className={`thumb-wrapper ${
@@ -91,7 +112,7 @@ export default function ProcessResult({ results = [] }) {
         )}
       </div>
 
-      {results.length > 0 && (
+      {localResults.length > 0 && (
         <div className="download-all-wrapper">
           <button onClick={handleDownloadAll}>전체 다운로드</button>
         </div>
