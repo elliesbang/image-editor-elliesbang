@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+ import React, { useState, useEffect } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-export default function ProcessResult({ results = [] }) {
+export default function ProcessResult({ results = [], setSelectedResult }) {
   const [selectedResults, setSelectedResults] = useState([]);
   const [localResults, setLocalResults] = useState(results);
 
@@ -10,7 +10,6 @@ export default function ProcessResult({ results = [] }) {
   useEffect(() => {
     const handleProcessed = (e) => {
       const { file, thumbnail } = e.detail;
-      // Blob → base64 변환 (ZIP 다운로드 호환)
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result.split(",")[1];
@@ -27,18 +26,35 @@ export default function ProcessResult({ results = [] }) {
 
   // ✅ 이미지 선택 / 해제
   const toggleSelect = (img) => {
-    setSelectedResults((prev) =>
-      prev.includes(img) ? prev.filter((i) => i !== img) : [...prev, img]
-    );
+    let newSelection;
+    if (selectedResults.includes(img)) {
+      newSelection = [];
+      if (setSelectedResult) setSelectedResult(null);
+    } else {
+      newSelection = [img];
+      if (setSelectedResult) setSelectedResult(img); // ✅ 선택 이미지 App으로 전달
+    }
+    setSelectedResults(newSelection);
   };
 
   // ✅ 전체 선택 / 해제 / 삭제
-  const handleSelectAll = () => setSelectedResults([...localResults]);
-  const handleDeselectAll = () => setSelectedResults([]);
+  const handleSelectAll = () => {
+    setSelectedResults([...localResults]);
+    if (setSelectedResult && localResults.length > 0) {
+      setSelectedResult(localResults[0]);
+    }
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedResults([]);
+    if (setSelectedResult) setSelectedResult(null);
+  };
+
   const handleDeleteAll = () => {
     if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
       setLocalResults([]);
       setSelectedResults([]);
+      if (setSelectedResult) setSelectedResult(null);
     }
   };
 
