@@ -29,10 +29,11 @@ export default function Footer() {
           💛 <strong>엘리의방</strong> 이미지 에디터
         </div>
 
+        {/* ✅ 네모 없는 텍스트 링크 */}
         <div className="footer-links">
-          <button onClick={() => setModal("terms")}>이용약관</button>
-          <button onClick={() => setModal("privacy")}>개인정보처리방침</button>
-          <button onClick={() => setModal("cookie")}>쿠키 정책</button>
+          <a href="#" onClick={() => setModal("terms")}>이용약관</a>
+          <a href="#" onClick={() => setModal("privacy")}>개인정보처리방침</a>
+          <a href="#" onClick={() => setModal("cookie")}>쿠키 정책</a>
         </div>
 
         <p className="footer-text">
