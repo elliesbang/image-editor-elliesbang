@@ -5,6 +5,15 @@ export default function AdditionalEditor({ selectedImage }) {
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // ✅ 안전하게 이미지 가져오기 (파일, 썸네일, base64 모두 대응)
+  const getCurrentImage = () => {
+    if (!selectedImage) return null;
+    if (selectedImage.file) return selectedImage.file;
+    if (selectedImage.thumbnail) return selectedImage.thumbnail;
+    if (typeof selectedImage === "string") return selectedImage;
+    return null;
+  };
+
   // ✅ base64 변환
   const blobToBase64 = (blob) =>
     new Promise((resolve) => {
@@ -15,21 +24,24 @@ export default function AdditionalEditor({ selectedImage }) {
 
   // ✅ 공통 API 호출 함수
   const processImage = async (endpoint, extra = {}) => {
-    if (!selectedImage) return alert("이미지를 선택하세요!");
+    const currentImage = getCurrentImage();
+    if (!currentImage) return alert("이미지를 선택하세요!");
     setLoading(true);
     try {
       const formData = new FormData();
 
       // File 또는 base64
-      if (selectedImage.file) {
-        formData.append("image", selectedImage.file);
-      } else {
-        const byteCharacters = atob(selectedImage);
+      if (currentImage instanceof File) {
+        formData.append("image", currentImage);
+      } else if (typeof currentImage === "string") {
+        const byteCharacters = atob(currentImage);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        const blob = new Blob([new Uint8Array(byteNumbers)], { type: "image/png" });
+        const blob = new Blob([new Uint8Array(byteNumbers)], {
+          type: "image/png",
+        });
         formData.append("image", blob, "image.png");
       }
 
@@ -43,7 +55,9 @@ export default function AdditionalEditor({ selectedImage }) {
       const data = await res.json();
       if (!res.ok || !data.result) throw new Error(`${endpoint} 실패`);
 
-      const blob = await fetch(`data:image/png;base64,${data.result}`).then((r) => r.blob());
+      const blob = await fetch(`data:image/png;base64,${data.result}`).then((r) =>
+        r.blob()
+      );
       const file = new File([blob], "result.png", { type: "image/png" });
 
       window.dispatchEvent(
@@ -63,18 +77,22 @@ export default function AdditionalEditor({ selectedImage }) {
 
   // ✅ 리사이즈
   const handleResize = async () => {
+    const currentImage = getCurrentImage();
+    if (!currentImage) return alert("이미지를 선택하세요!");
     if (!resizeW) return alert("가로(px)를 입력하세요!");
     await processImage("resize", { width: resizeW });
   };
 
   // ✅ 키워드 분석
   const handleAnalyze = async () => {
-    if (!selectedImage) return alert("이미지를 선택하세요!");
+    const currentImage = getCurrentImage();
+    if (!currentImage) return alert("이미지를 선택하세요!");
     setLoading(true);
     try {
-      const blob = selectedImage.file
-        ? selectedImage.file
-        : await fetch(`data:image/png;base64,${selectedImage}`).then((r) => r.blob());
+      const blob =
+        currentImage instanceof File
+          ? currentImage
+          : await fetch(`data:image/png;base64,${currentImage}`).then((r) => r.blob());
       const base64 = await blobToBase64(blob);
 
       const res = await fetch("/api/analyze", {
