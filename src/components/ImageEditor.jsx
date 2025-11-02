@@ -1,17 +1,18 @@
 import React from "react";
 
 export default function ImageEditor({ selectedImage }) {
-  // ✅ 이미지 URL 통합 처리
+  // ✅ 이미지 URL 처리 (File or base64 모두 지원)
   const getImageURL = () => {
     if (!selectedImage) return null;
     if (selectedImage.file) return URL.createObjectURL(selectedImage.file);
+    if (selectedImage.thumbnail) return selectedImage.thumbnail;
     if (typeof selectedImage === "string") return `data:image/png;base64,${selectedImage}`;
     return null;
   };
 
   const imgSrc = getImageURL();
 
-  // ✅ 서버 호출
+  // ✅ 서버 호출 함수
   const processImage = async (endpoint) => {
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
 
@@ -29,6 +30,7 @@ export default function ImageEditor({ selectedImage }) {
       if (!res.ok) throw new Error(`${endpoint} 요청 실패`);
       const data = await res.json();
 
+      // ✅ 처리 완료 후 이벤트 전달
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
           detail: { file, thumbnail: data.result },
@@ -44,41 +46,51 @@ export default function ImageEditor({ selectedImage }) {
 
   return (
     <div className="editor-section">
-      {/* ✅ 이미지가 없을 때 */}
-      {!imgSrc ? (
-        <p style={{ color: "#999", fontSize: "0.9rem" }}>이미지를 선택하세요.</p>
-      ) : (
-        <>
-          {/* ✅ 미리보기 */}
-          <div className="preview-box">
-            <img
-              src={imgSrc}
-              alt="미리보기"
-              style={{
-                maxWidth: "100%",
-                borderRadius: "8px",
-                marginBottom: "16px",
-              }}
-            />
-          </div>
+      {/* ✅ 버튼은 항상 보이되, 이미지 없으면 비활성화 */}
+      <div className="button-grid">
+        <button
+          className="btn"
+          disabled={!imgSrc}
+          onClick={() => processImage("remove-bg")}
+        >
+          배경제거
+        </button>
+        <button
+          className="btn"
+          disabled={!imgSrc}
+          onClick={() => processImage("crop")}
+        >
+          크롭
+        </button>
+        <button
+          className="btn"
+          disabled={!imgSrc}
+          onClick={() => processImage("remove-bg-crop")}
+        >
+          배경제거 + 크롭
+        </button>
+        <button
+          className="btn"
+          disabled={!imgSrc}
+          onClick={() => processImage("denoise")}
+        >
+          노이즈 제거
+        </button>
+      </div>
 
-          {/* ✅ 기능 버튼 */}
-          <div className="button-grid">
-            <button className="btn" onClick={() => processImage("remove-bg")}>
-              배경제거
-            </button>
-            <button className="btn" onClick={() => processImage("crop")}>
-              크롭
-            </button>
-            <button className="btn" onClick={() => processImage("remove-bg-crop")}>
-              배경제거 + 크롭
-            </button>
-            <button className="btn" onClick={() => processImage("denoise")}>
-              노이즈 제거
-            </button>
-          </div>
-        </>
+      {/* ✅ 이미지가 없을 때 안내문 */}
+      {!imgSrc && (
+        <p
+          style={{
+            color: "#999",
+            fontSize: "0.9rem",
+            textAlign: "center",
+            marginTop: "8px",
+          }}
+        >
+          이미지를 선택하면 버튼이 활성화됩니다.
+        </p>
       )}
     </div>
   );
-}
+}  
