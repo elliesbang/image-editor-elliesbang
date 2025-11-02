@@ -475,3 +475,26 @@ footer a:hover {
 .thumb-wrapper:hover .delete-btn {
   opacity: 1;
 }
+
+/* 🌼 이미지 편집 버튼 그리드 */
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.button-grid .btn {
+  background: #ffd331;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.button-grid .btn:hover {
+  background: #ffcc00;
+}
