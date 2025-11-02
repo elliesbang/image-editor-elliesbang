@@ -46,12 +46,8 @@ export default function ProcessResult({ results = [] }) {
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "elliesbang_results.zip");
   };
-
-  return (
-    <section className="section-box">
-      <h2>🎉 처리 결과</h2>
-
-      {/* ✅ 컨트롤 버튼 */}
+      
+       {/* ✅ 컨트롤 버튼 */}
       <div className="result-actions">
         <button onClick={handleSelectAll}>전체 선택</button>
         <button onClick={handleDeselectAll}>전체 해제</button>
