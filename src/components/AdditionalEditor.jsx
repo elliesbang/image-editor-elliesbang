@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 
-function AdditionalEditor({ selectedImage }) {
+function AdditionalEditor({ selectedImage, selectedResult }) {
   const [resizeW, setResizeW] = useState("");
   const [resizeH, setResizeH] = useState("");
   const [svgColors, setSvgColors] = useState(1);
   const [gifNote, setGifNote] = useState("");
   const [keywords, setKeywords] = useState("");
 
-  const disabled = !selectedImage;
+  // ✅ 업로드 or 처리결과 중 하나라도 선택되어 있으면 버튼 활성화
+  const targetImage = selectedImage || selectedResult;
+  const disabled = !targetImage;
 
   return (
     <div className="tools-wrap">
@@ -32,14 +34,14 @@ function AdditionalEditor({ selectedImage }) {
       className="btn"
       disabled={disabled || !resizeW}
       onClick={() => {
-        if (!selectedImage || !resizeW) {
+        if (!targetImage || !resizeW) {
           alert("이미지를 선택하고 가로 크기를 입력하세요!");
           return;
         }
 
         // ✅ 원본 이미지 불러오기
         const img = new Image();
-        img.src = URL.createObjectURL(selectedImage.file);
+        img.src = URL.createObjectURL(targetImage.file || targetImage);
 
         img.onload = () => {
           const aspect = img.height / img.width;
@@ -52,20 +54,20 @@ function AdditionalEditor({ selectedImage }) {
           canvas.width = newW;
           canvas.height = newH;
           ctx.drawImage(img, 0, 0, newW, newH);
-canvas.toBlob((blob) => {
-  const resizedFile = new File([blob], "resized.png", {
-    type: "image/png",
-  });
-  const url = URL.createObjectURL(resizedFile);
 
-  // ✅ 처리결과 섹션으로 새 이미지 전달
-  window.dispatchEvent(
-    new CustomEvent("imageProcessed", { detail: { file: resizedFile, thumbnail: url } })
-  );
+          canvas.toBlob((blob) => {
+            const resizedFile = new File([blob], "resized.png", {
+              type: "image/png",
+            });
+            const url = URL.createObjectURL(resizedFile);
 
-  alert(`리사이즈 완료! ${newW} × ${newH}px`);
-}, "image/png");
-          
+            // ✅ 처리결과 섹션으로 새 이미지 전달
+            window.dispatchEvent(
+              new CustomEvent("imageProcessed", { detail: { file: resizedFile, thumbnail: url } })
+            );
+
+            alert(`리사이즈 완료! ${newW} × ${newH}px`);
+          }, "image/png");
         };
       }}
     >
@@ -136,13 +138,13 @@ canvas.toBlob((blob) => {
       className="btn ghost"
       disabled={disabled}
       onClick={async () => {
-        if (!selectedImage) {
+        if (!targetImage) {
           alert("이미지를 먼저 선택하세요!");
           return;
         }
         try {
           const formData = new FormData();
-          formData.append("image", selectedImage.file);
+          formData.append("image", targetImage.file || targetImage);
           const res = await fetch("/api/analyze", { method: "POST", body: formData });
           const data = await res.json();
 
