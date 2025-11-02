@@ -6,26 +6,20 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   const [gifNote, setGifNote] = useState("");
   const [keywords, setKeywords] = useState([]);
 
-  // ✅ 이미지 URL 자동 추출 (File, 썸네일, base64 모두 지원)
+  // ✅ 이미지 URL (썸네일, 파일, base64 모두 지원)
   const getImageURL = () => {
-    if (selectedUploadImage?.file) {
-      return URL.createObjectURL(selectedUploadImage.file);
-    } else if (selectedUploadImage?.thumbnail) {
-      return selectedUploadImage.thumbnail;
-    } else if (selectedResultImage?.file) {
-      return URL.createObjectURL(selectedResultImage.file);
-    } else if (typeof selectedResultImage === "string") {
-      return `data:image/png;base64,${selectedResultImage}`;
-    }
+    if (selectedUploadImage?.file) return URL.createObjectURL(selectedUploadImage.file);
+    if (selectedUploadImage?.thumbnail) return selectedUploadImage.thumbnail;
+    if (selectedResultImage?.file) return URL.createObjectURL(selectedResultImage.file);
+    if (typeof selectedResultImage === "string") return `data:image/png;base64,${selectedResultImage}`;
     return null;
   };
 
   const imgSrc = getImageURL();
-  const disabled = !imgSrc; // ✅ 이미지 없으면만 비활성화
+  const disabled = !imgSrc;
 
   return (
     <div className="tools-wrap">
-
       {/* ✅ 리사이즈 */}
       <div className="tool-row">
         <div className="row-left">
@@ -45,11 +39,6 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
             className="btn"
             disabled={!imgSrc || !resizeW}
             onClick={() => {
-              if (!imgSrc || !resizeW) {
-                alert("이미지를 선택하고 가로 크기를 입력하세요!");
-                return;
-              }
-
               const img = new Image();
               img.src = imgSrc;
 
@@ -64,9 +53,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
                 ctx.drawImage(img, 0, 0, newW, newH);
 
                 canvas.toBlob((blob) => {
-                  const resizedFile = new File([blob], "resized.png", {
-                    type: "image/png",
-                  });
+                  const resizedFile = new File([blob], "resized.png", { type: "image/png" });
                   const url = URL.createObjectURL(resizedFile);
                   window.dispatchEvent(
                     new CustomEvent("imageProcessed", {
@@ -90,14 +77,11 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
           {keywords.length > 0 ? (
             <div className="hint-box">{keywords.join(", ")}</div>
           ) : (
-            <p style={{ color: "#999", fontSize: "0.9rem" }}>
-              분석 결과가 여기에 표시됩니다.
-            </p>
+            <p style={{ color: "#999", fontSize: "0.9rem" }}>분석 결과가 여기에 표시됩니다.</p>
           )}
-
           <button
             className="btn ghost"
-            disabled={!imgSrc}
+            disabled={disabled}
             onClick={async () => {
               try {
                 const blob = await fetch(imgSrc).then((r) => r.blob());
@@ -147,7 +131,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={!imgSrc}
+            disabled={disabled}
             onClick={async () => {
               try {
                 const blob = await fetch(imgSrc).then((r) => r.blob());
@@ -186,7 +170,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={!imgSrc}
+            disabled={disabled}
             onClick={async () => {
               try {
                 const blob = await fetch(imgSrc).then((r) => r.blob());
