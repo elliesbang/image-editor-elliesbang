@@ -19,8 +19,6 @@ export const onRequestPost = async ({ request, env }) => {
     });
 
     const data = await res.json();
-    console.log("OpenAI Response:", JSON.stringify(data, null, 2)); // ✅ 응답 확인용 로그
-
     const result = data?.data?.[0]?.b64_json;
     if (!result) throw new Error("OpenAI 응답에 결과 이미지가 없습니다.");
 
