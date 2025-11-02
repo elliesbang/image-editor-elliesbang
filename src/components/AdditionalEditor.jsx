@@ -16,11 +16,11 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   };
 
   const imgSrc = getImageURL();
-  const disabled = !imgSrc;
 
   // ✅ 리사이즈
   const handleResize = () => {
-    if (!imgSrc || !resizeW) return alert("이미지를 선택하고 가로 크기를 입력하세요!");
+    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
+    if (!resizeW) return alert("가로 크기를 입력하세요!");
 
     const img = new Image();
     img.src = imgSrc;
@@ -64,6 +64,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   // ✅ 키워드 분석
   const handleAnalyze = async () => {
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
+
     try {
       const blob = await fetch(imgSrc).then((r) => r.blob());
       const file = new File([blob], "target.png", { type: "image/png" });
@@ -110,7 +111,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
           />
         </div>
         <div className="row-right">
-          <button className="btn" disabled={!imgSrc || !resizeW} onClick={handleResize}>
+          <button className="btn" onClick={handleResize}>
             리사이즈
           </button>
         </div>
@@ -127,7 +128,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
           )}
         </div>
         <div className="row-right">
-          <button className="btn" disabled={!imgSrc} onClick={handleAnalyze}>
+          <button className="btn" onClick={handleAnalyze}>
             키워드 분석
           </button>
         </div>
@@ -150,8 +151,8 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={!imgSrc}
             onClick={async () => {
+              if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
               try {
                 const blob = await fetch(imgSrc).then((r) => r.blob());
                 const file = new File([blob], "target.png", { type: "image/png" });
@@ -189,8 +190,8 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={!imgSrc}
             onClick={async () => {
+              if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
               try {
                 const blob = await fetch(imgSrc).then((r) => r.blob());
                 const file = new File([blob], "target.png", { type: "image/png" });
