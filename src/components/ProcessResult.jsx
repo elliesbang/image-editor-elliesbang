@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
@@ -6,17 +6,27 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   const [selectedResults, setSelectedResults] = useState([]);
   const [localResults, setLocalResults] = useState(results);
 
-  // ✅ 리사이즈 등 로컬 처리 결과 자동 반영
+  // ✅ 리사이즈·배경제거 등 공통 처리 결과 자동 반영
   useEffect(() => {
     const handleProcessed = (e) => {
-      const { file, thumbnail } = e.detail;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result.split(",")[1];
-        setLocalResults((prev) => [...prev, base64]);
-      };
-      reader.readAsDataURL(file);
+      const { file, thumbnail, result } = e.detail;
+
+      // ✅ result나 thumbnail 중 하나라도 있으면 바로 반영
+      const base64Data = result || thumbnail;
+
+      if (base64Data) {
+        setLocalResults((prev) => [...prev, base64Data]);
+      } else if (file) {
+        // ✅ fallback: 파일만 있을 경우 FileReader로 변환
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(",")[1];
+          setLocalResults((prev) => [...prev, base64]);
+        };
+        reader.readAsDataURL(file);
+      }
     };
+
     window.addEventListener("imageProcessed", handleProcessed);
     return () => window.removeEventListener("imageProcessed", handleProcessed);
   }, []);
