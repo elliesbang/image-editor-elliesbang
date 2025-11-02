@@ -86,20 +86,27 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
         </div>
       )}
 
-      {/* ✅ 썸네일 */}
-      <div className="thumbnail-grid">
-        {images.map((img, i) => (
-          <img
-            key={i}
-            src={img.thumbnail}
-            alt="thumbnail"
-            className={`thumb ${selectedImages.includes(img) ? "selected" : ""}`}
-            onClick={() => handleSelectImage(img)}
-          />
-        ))}
-      </div>
+{/* ✅ 썸네일 */}
+<div className="thumbnail-grid">
+  {images.map((img, i) => (
+    <div key={i} className="thumb-wrapper">
+      <img
+        src={img.thumbnail}
+        alt="thumbnail"
+        className={`thumb ${selectedImages.includes(img) ? "selected" : ""}`}
+        onClick={() => handleSelectImage(img)}
+      />
+      <button
+        className="delete-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          setImages(images.filter((_, idx) => idx !== i));
+          setSelectedImages(selectedImages.filter((x) => x !== img));
+        }}
+      >
+        ✕
+      </button>
     </div>
-  );
-};
-
-export default ImageUpload;
+  ))}
+</div>
+      
