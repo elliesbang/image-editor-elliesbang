@@ -6,7 +6,8 @@ export default function ImageEditor({ selectedImage }) {
     if (!selectedImage) return null;
     if (selectedImage.file) return URL.createObjectURL(selectedImage.file);
     if (selectedImage.thumbnail) return selectedImage.thumbnail;
-    if (typeof selectedImage === "string") return `data:image/png;base64,${selectedImage}`;
+    if (typeof selectedImage === "string")
+      return `data:image/png;base64,${selectedImage}`;
     return null;
   };
 
@@ -14,7 +15,10 @@ export default function ImageEditor({ selectedImage }) {
 
   // ✅ 서버 호출 함수
   const processImage = async (endpoint) => {
-    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
+    if (!imgSrc) {
+      alert("이미지를 먼저 선택해주세요!");
+      return;
+    }
 
     try {
       const blob = await fetch(imgSrc).then((r) => r.blob());
@@ -46,39 +50,23 @@ export default function ImageEditor({ selectedImage }) {
 
   return (
     <div className="editor-section">
-      {/* ✅ 버튼은 항상 보이되, 이미지 없으면 비활성화 */}
+      {/* ✅ 버튼은 항상 활성화 */}
       <div className="button-grid">
-        <button
-          className="btn"
-          disabled={!imgSrc}
-          onClick={() => processImage("remove-bg")}
-        >
+        <button className="btn" onClick={() => processImage("remove-bg")}>
           배경제거
         </button>
-        <button
-          className="btn"
-          disabled={!imgSrc}
-          onClick={() => processImage("crop")}
-        >
+        <button className="btn" onClick={() => processImage("crop")}>
           크롭
         </button>
-        <button
-          className="btn"
-          disabled={!imgSrc}
-          onClick={() => processImage("remove-bg-crop")}
-        >
+        <button className="btn" onClick={() => processImage("remove-bg-crop")}>
           배경제거 + 크롭
         </button>
-        <button
-          className="btn"
-          disabled={!imgSrc}
-          onClick={() => processImage("denoise")}
-        >
+        <button className="btn" onClick={() => processImage("denoise")}>
           노이즈 제거
         </button>
       </div>
 
-      {/* ✅ 이미지가 없을 때 안내문 */}
+      {/* ✅ 이미지 없을 때 안내문 */}
       {!imgSrc && (
         <p
           style={{
@@ -88,9 +76,9 @@ export default function ImageEditor({ selectedImage }) {
             marginTop: "8px",
           }}
         >
-          이미지를 선택하면 버튼이 활성화됩니다.
+          이미지를 선택한 후 기능을 사용하세요.
         </p>
       )}
     </div>
   );
-}  
+}
