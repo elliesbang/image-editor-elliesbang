@@ -1,43 +1,32 @@
-import React from "react";
-import Header from "./components/Header";
+import React, { useState } from "react";
 import ImageUpload from "./components/ImageUpload";
-import ImageEdit from "./components/ImageEdit";
-import ProcessResult from "./components/ProcessResult";
-import ExtraEdit from "./components/ExtraEdit";
+import ImageEditor from "./components/ImageEditor";
+import Analyzer from "./components/Analyzer";
+import AdditionalEditor from "./components/AdditionalEditor";
 import Footer from "./components/Footer";
-import "./App.css";
 
-export default function App() {
+function App() {
+  const [images, setImages] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const handleImagesUploaded = (newImages) => {
+    setImages((prev) => [...prev, ...newImages]);
+  };
+
   return (
-    <div className="app-layout">
-      {/* ✅ 헤더 */}
-      <Header />
+    <div className="app">
+      <ImageUpload
+        onImagesUploaded={handleImagesUploaded}
+        selectedImage={selectedImage}
+        setSelectedImage={setSelectedImage}
+      />
 
-      {/* ✅ 메인 컨텐츠 */}
-      <main className="app-main">
-        {/* 1️⃣ 이미지 업로드 */}
-        <section className="app-section">
-          <ImageUpload />
-        </section>
-
-        {/* 2️⃣ 이미지 편집 */}
-        <section className="app-section">
-          <ImageEdit />
-        </section>
-
-        {/* 3️⃣ 처리 결과 */}
-        <section className="app-section">
-          <ProcessResult />
-        </section>
-
-        {/* 4️⃣ 추가 편집 */}
-        <section className="app-section">
-          <ExtraEdit />
-        </section>
-      </main>
-
-      {/* ✅ 푸터 */}
+      <ImageEditor selectedImage={selectedImage} />
+      <Analyzer selectedImage={selectedImage} />
+      <AdditionalEditor selectedImage={selectedImage} />
       <Footer />
     </div>
   );
 }
+
+export default App;
