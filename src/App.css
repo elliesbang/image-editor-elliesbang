@@ -448,3 +448,30 @@ footer a:hover {
 .download-all-wrapper button:hover {
   background: #ffcc00;
 }
+
+/* 🌼 개별 이미지 삭제 버튼 */
+.thumb-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.8rem;
+  line-height: 20px;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.thumb-wrapper:hover .delete-btn {
+  opacity: 1;
+}
