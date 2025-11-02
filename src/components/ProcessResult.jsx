@@ -12,15 +12,16 @@ export default function ProcessResult({ results = [] }) {
     );
   };
 
+  // ✅ 전체 선택 / 해제 / 삭제
   const handleSelectAll = () => setSelectedResults([...results]);
   const handleDeselectAll = () => setSelectedResults([]);
   const handleDeleteAll = () => {
-    if (window.confirm("모든 처리 이미지를 삭제하시겠습니까?")) {
+    if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
       setSelectedResults([]);
     }
   };
 
-  // ✅ 개별 저장
+  // ✅ 개별 다운로드
   const handleDownload = (base64, index) => {
     const link = document.createElement("a");
     link.href = `data:image/png;base64,${base64}`;
@@ -28,7 +29,7 @@ export default function ProcessResult({ results = [] }) {
     link.click();
   };
 
-  // ✅ 전체 저장 (ZIP)
+  // ✅ 전체 ZIP 다운로드
   const handleDownloadAll = async () => {
     if (results.length === 0) return alert("저장할 이미지가 없습니다!");
     const zip = new JSZip();
@@ -47,35 +48,34 @@ export default function ProcessResult({ results = [] }) {
     saveAs(content, "elliesbang_results.zip");
   };
 
-  // ✅ JSX 반환 부분 추가됨
   return (
-    <section className="app-section">
-      <h2 className="section-header">🎉 처리 결과</h2>
+    <div className="result-section">
+      {/* ✅ 3컬럼 버튼 */}
+      {results.length > 0 && (
+        <div className="control-buttons">
+          <button onClick={handleSelectAll}>전체 선택</button>
+          <button onClick={handleDeselectAll}>전체 해제</button>
+          <button onClick={handleDeleteAll}>전체 삭제</button>
+        </div>
+      )}
 
-      {/* ✅ 컨트롤 버튼 */}
-      <div className="result-actions">
-        <button onClick={handleSelectAll}>전체 선택</button>
-        <button onClick={handleDeselectAll}>전체 해제</button>
-        <button onClick={handleDeleteAll}>전체 삭제</button>
-      </div>
-
-      {/* ✅ 썸네일 */}
-      <div className="result-grid">
+      {/* ✅ 결과 썸네일 */}
+      <div className="thumbnail-grid">
         {results.length === 0 ? (
           <p className="empty">아직 처리된 이미지가 없습니다.</p>
         ) : (
           results.map((img, idx) => (
             <div
               key={idx}
-              className={`result-thumb ${
+              className={`thumb-wrapper ${
                 selectedResults.includes(img) ? "selected" : ""
               }`}
               onClick={() => toggleSelect(img)}
             >
               <img
                 src={`data:image/png;base64,${img}`}
-                alt={`결과 이미지 ${idx + 1}`}
-                className="result-image"
+                alt={`결과 ${idx + 1}`}
+                className="thumb"
               />
               <button
                 className="save-btn"
@@ -91,14 +91,11 @@ export default function ProcessResult({ results = [] }) {
         )}
       </div>
 
-      {/* ✅ 전체 다운로드 버튼 */}
       {results.length > 0 && (
         <div className="download-all-wrapper">
-          <button className="download-all" onClick={handleDownloadAll}>
-            전체 다운로드
-          </button>
+          <button onClick={handleDownloadAll}>전체 다운로드</button>
         </div>
       )}
-    </section>
+    </div>
   );
 }
