@@ -47,7 +47,10 @@ function App() {
 
         <section className="app-section">
           <div className="section-header">⚙️ 추가 기능</div>
-          <AdditionalEditor selectedImage={selectedImage} />
+          <AdditionalEditor
+  selectedUploadImage={selectedImage}           // 업로드 쪽 선택
+  selectedResultImage={selectedResult}          // 처리 결과 쪽 선택
+/>
         </section>
       </main>
 
