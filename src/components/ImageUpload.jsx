@@ -29,10 +29,12 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
     setIsDragging(false);
     handleImageUpload(e.dataTransfer.files);
   };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
   };
+
   const handleDragLeave = () => setIsDragging(false);
 
   // ✅ 이미지 선택 / 해제
@@ -63,7 +65,7 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
     >
       {/* ✅ 파일 업로드 입력 */}
       <input
-        id="file-upload" // ✅ label과 연결됨
+        id="file-upload"
         type="file"
         accept="image/*"
         multiple
@@ -71,7 +73,7 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
         className="upload-input"
       />
 
-      {/* ✅ 업로드 영역 (클릭 작동하도록 연결) */}
+      {/* ✅ 업로드 영역 */}
       <label htmlFor="file-upload" className="upload-box">
         <p className="upload-text">클릭 또는 이미지를 드래그하여 업로드</p>
         <p className="upload-sub">한 번에 최대 50장</p>
@@ -86,31 +88,31 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
         </div>
       )}
 
-{/* ✅ 썸네일 */}
-<div className="thumbnail-grid">
-  {images.map((img, i) => (
-    <div key={i} className="thumb-wrapper">
-      <img
-        src={img.thumbnail}
-        alt="thumbnail"
-        className={`thumb ${selectedImages.includes(img) ? "selected" : ""}`}
-        onClick={() => handleSelectImage(img)}
-      />
-      <button
-        className="delete-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          setImages(images.filter((_, idx) => idx !== i));
-          setSelectedImages(selectedImages.filter((x) => x !== img));
-        }}
-      >
-        ✕
-      </button>
+      {/* ✅ 썸네일 */}
+      <div className="thumbnail-grid">
+        {images.map((img, i) => (
+          <div key={i} className="thumb-wrapper">
+            <img
+              src={img.thumbnail}
+              alt="thumbnail"
+              className={`thumb ${selectedImages.includes(img) ? "selected" : ""}`}
+              onClick={() => handleSelectImage(img)}
+            />
+            <button
+              className="delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setImages(images.filter((_, idx) => idx !== i));
+                setSelectedImages(selectedImages.filter((x) => x !== img));
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
-  ))}
-</div>
-  </div> // ✅ 여기서 꼭 닫혀야 함
-); // ✅ return 닫힘
-} // ✅ 함수 닫힘
+  );
+};
 
 export default ImageUpload;
