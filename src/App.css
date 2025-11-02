@@ -39,7 +39,7 @@
   max-width: 420px;
   background: #fff;
   border-bottom: 1px solid #eee;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
@@ -50,7 +50,7 @@
 .header-left {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ffd331;
+  color: #000; /* 🔹 검정 텍스트 */
 }
 
 .header-right {
@@ -74,19 +74,22 @@
 /* 🌼 섹션 제목 */
 .section-header {
   width: 100%;
-  background: #ffd331;
+  background: transparent;
   color: #000;
   font-weight: 700;
-  text-align: center;
-  padding: 8px 0;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  font-size: 1rem;
+  text-align: left;
+  padding: 0 0 6px 2px;
+  border-radius: 0;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #ffd331;
 }
 
 /* 🌼 버튼 */
 button, .btn {
   width: 100%;
   padding: 12px 0;
+  margin-bottom: 8px; /* 버튼 간 간격 */
   background: #ffd331;
   border: none;
   border-radius: 10px;
@@ -94,6 +97,9 @@ button, .btn {
   cursor: pointer;
   transition: 0.2s ease;
   font-size: 0.95rem;
+}
+button:last-child, .btn:last-child {
+  margin-bottom: 0; /* 마지막 버튼은 간격 제거 */
 }
 button:hover, .btn:hover {
   background: #ffcc00;
@@ -121,7 +127,7 @@ button:hover, .btn:hover {
   object-fit: cover;
 }
 
-/* ===== 추가 기능 구조 ===== */
+/* 🌼 추가 기능 구조 */
 .tools-wrap {
   display: flex;
   flex-direction: column;
@@ -152,7 +158,15 @@ button:hover, .btn:hover {
   resize: none;
 }
 
-/* ===== 힌트 박스 ===== */
+/* 🌼 처리 결과 */
+#result-section {
+  display: none; /* 중복 방지 */
+}
+#process-section {
+  display: flex;
+}
+
+/* 🌼 힌트 박스 */
 .hint-box {
   width: 100%;
   background: #fff8d8;
@@ -163,7 +177,7 @@ button:hover, .btn:hover {
   font-size: 0.9rem;
 }
 
-/* ===== 로그인 모달 ===== */
+/* 🌼 로그인 모달 */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -206,7 +220,7 @@ button:hover, .btn:hover {
   font-size: 0.9rem;
 }
 
-/* 🌼 푸터 */
+/* 🌼 푸터 (텍스트 링크형) */
 footer {
   width: 100%;
   max-width: 420px;
@@ -216,11 +230,13 @@ footer {
   font-size: 0.8rem;
   color: #555;
 }
+
 footer a {
   color: #555;
   text-decoration: none;
-  margin: 0 6px;
+  margin: 0 10px;
 }
+
 footer a:hover {
   text-decoration: underline;
 }
