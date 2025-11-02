@@ -52,14 +52,20 @@ function AdditionalEditor({ selectedImage }) {
           canvas.width = newW;
           canvas.height = newH;
           ctx.drawImage(img, 0, 0, newW, newH);
+canvas.toBlob((blob) => {
+  const resizedFile = new File([blob], "resized.png", {
+    type: "image/png",
+  });
+  const url = URL.createObjectURL(resizedFile);
 
-          canvas.toBlob((blob) => {
-            const resizedFile = new File([blob], "resized.png", {
-              type: "image/png",
-            });
-            alert(`리사이즈 완료! ${newW} × ${newH}px`);
-            console.log("리사이즈된 파일:", resizedFile);
-          }, "image/png");
+  // ✅ 처리결과 섹션으로 새 이미지 전달
+  window.dispatchEvent(
+    new CustomEvent("imageProcessed", { detail: { file: resizedFile, thumbnail: url } })
+  );
+
+  alert(`리사이즈 완료! ${newW} × ${newH}px`);
+}, "image/png");
+          
         };
       }}
     >
