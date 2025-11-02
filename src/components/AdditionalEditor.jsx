@@ -6,7 +6,14 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   const [gifNote, setGifNote] = useState("");
   const [keywords, setKeywords] = useState([]);
 
-  // ✅ 대상 이미지 선택 (업로드 or 처리결과)
+  // ✅ blob → base64 변환
+  const blobToBase64 = (blob) =>
+    new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+      reader.readAsDataURL(blob);
+    });
+
   const getImageURL = () => {
     if (selectedUploadImage?.file)
       return URL.createObjectURL(selectedUploadImage.file);
@@ -35,7 +42,6 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
       canvas.height = newH;
       ctx.drawImage(img, 0, 0, newW, newH);
 
-      // ✅ base64로 변환 후 ProcessResult로 전달
       const base64 = canvas.toDataURL("image/png").split(",")[1];
       const blob = dataURLtoBlob(canvas.toDataURL("image/png"));
       const resizedFile = new File([blob], "resized.png", { type: "image/png" });
@@ -50,7 +56,6 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
     };
   };
 
-  // ✅ base64 → Blob 변환 유틸
   const dataURLtoBlob = (dataurl) => {
     const arr = dataurl.split(",");
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -64,31 +69,19 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   // ✅ 키워드 분석
   const handleAnalyze = async () => {
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
-
     try {
       const blob = await fetch(imgSrc).then((r) => r.blob());
-      const file = new File([blob], "target.png", { type: "image/png" });
-      const formData = new FormData();
-      formData.append("image", file);
+      const base64 = await blobToBase64(blob);
 
-      const res = await fetch("/api/analyze", { method: "POST", body: formData });
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
+
       const data = await res.json();
-
       console.log("🔍 키워드 분석 결과:", data);
-
-      const translateTable = {
-        flower: "꽃", sky: "하늘", tree: "나무", person: "사람",
-        people: "사람들", water: "물", cloud: "구름", building: "건물",
-        city: "도시", mountain: "산", car: "자동차", dog: "강아지",
-        cat: "고양이", food: "음식", plant: "식물", bird: "새",
-        sun: "태양", sunset: "노을", forest: "숲", sea: "바다",
-        light: "빛", art: "예술", picture: "그림", color: "색상", paper: "종이",
-      };
-
-      const raw = (data.keywords || data.tags || data.labels || []).slice(0, 25);
-      const koreanOnly = raw.map((k) => translateTable[k] || k).filter(Boolean);
-
-      setKeywords(koreanOnly);
+      setKeywords(data.keywords || []);
     } catch (err) {
       console.error("❌ 분석 오류:", err);
       alert("분석 중 오류가 발생했습니다.");
@@ -97,7 +90,6 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
 
   return (
     <div className="tools-wrap">
-
       {/* ✅ 리사이즈 */}
       <div className="tool-row">
         <div className="row-left">
@@ -130,86 +122,6 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button className="btn" onClick={handleAnalyze}>
             키워드 분석
-          </button>
-        </div>
-      </div>
-
-      {/* ✅ SVG 변환 */}
-      <div className="tool-row">
-        <div className="row-left">
-          <label className="row-label">SVG 변환</label>
-          <select
-            className="select"
-            value={svgColors}
-            onChange={(e) => setSvgColors(Number(e.target.value))}
-          >
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>{n}색</option>
-            ))}
-          </select>
-        </div>
-        <div className="row-right">
-          <button
-            className="btn"
-            onClick={async () => {
-              if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
-              try {
-                const blob = await fetch(imgSrc).then((r) => r.blob());
-                const file = new File([blob], "target.png", { type: "image/png" });
-                const formData = new FormData();
-                formData.append("image", file);
-                formData.append("colors", svgColors);
-                const res = await fetch("/api/svg", { method: "POST", body: formData });
-                if (!res.ok) throw new Error(`SVG 변환 실패 (${res.status})`);
-                const blobRes = await res.blob();
-                const url = URL.createObjectURL(blobRes);
-                window.open(url, "_blank");
-              } catch (err) {
-                console.error("SVG 변환 오류:", err);
-                alert("SVG 변환 중 오류가 발생했습니다.");
-              }
-            }}
-          >
-            SVG 변환
-          </button>
-        </div>
-      </div>
-
-      {/* ✅ GIF 변환 */}
-      <div className="tool-row">
-        <div className="row-left">
-          <label className="row-label">GIF 변환</label>
-          <textarea
-            className="textarea"
-            rows={2}
-            placeholder="예: 3프레임, 좌→우 흔들림"
-            value={gifNote}
-            onChange={(e) => setGifNote(e.target.value)}
-          />
-        </div>
-        <div className="row-right">
-          <button
-            className="btn"
-            onClick={async () => {
-              if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
-              try {
-                const blob = await fetch(imgSrc).then((r) => r.blob());
-                const file = new File([blob], "target.png", { type: "image/png" });
-                const formData = new FormData();
-                formData.append("image", file);
-                formData.append("note", gifNote);
-                const res = await fetch("/api/gif", { method: "POST", body: formData });
-                if (!res.ok) throw new Error(`GIF 변환 실패 (${res.status})`);
-                const blobRes = await res.blob();
-                const url = URL.createObjectURL(blobRes);
-                window.open(url, "_blank");
-              } catch (err) {
-                console.error("GIF 변환 오류:", err);
-                alert("GIF 변환 중 오류가 발생했습니다.");
-              }
-            }}
-          >
-            GIF 변환
           </button>
         </div>
       </div>
