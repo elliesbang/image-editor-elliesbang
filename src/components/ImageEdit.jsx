@@ -1,13 +1,50 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./ImageEdit.css";
 
+const UPLOAD_EVENT_NAME = "ellies-upload-update";
+
 export default function ImageEdit({ uploadedImages = [], setResults }) {
+  const [localImages, setLocalImages] = useState(uploadedImages);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    setLocalImages(uploadedImages);
+  }, [uploadedImages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleUpdate = (event) => {
+      if (event && Array.isArray(event.detail)) {
+        setLocalImages(event.detail);
+      }
+    };
+
+    const initialImages = Array.isArray(window.__ellies_uploadedImages)
+      ? window.__ellies_uploadedImages
+      : [];
+
+    if (initialImages.length) {
+      setLocalImages(initialImages);
+    }
+
+    window.addEventListener(UPLOAD_EVENT_NAME, handleUpdate);
+    return () => {
+      window.removeEventListener(UPLOAD_EVENT_NAME, handleUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedIndex === null) return;
+    if (!localImages[selectedIndex]) {
+      setSelectedIndex(null);
+    }
+  }, [localImages, selectedIndex]);
+
   // ✅ 선택된 이미지
   const selectedImage =
-    selectedIndex !== null ? uploadedImages[selectedIndex] : null;
+    selectedIndex !== null ? localImages[selectedIndex] : null;
 
   // ✅ 이미지 클릭 선택
   const handleSelect = (index) => {
@@ -49,7 +86,10 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
 
   // ✅ 이미지 처리
   const handleProcess = async (type) => {
-    if (!selectedImage) return alert("이미지를 선택해주세요!");
+    if (!selectedImage) {
+      alert("이미지를 선택하세요!");
+      return;
+    }
     setLoading(true);
 
     let prompt = "배경을 제거하세요";
@@ -62,7 +102,9 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
     const result = await callOpenAI(selectedImage, prompt);
 
     if (result) {
-      setResults((prev) => [...prev, result]);
+      if (typeof setResults === "function") {
+        setResults((prev) => [...prev, result]);
+      }
       alert("처리 완료!");
     } else {
       alert("처리 실패. 다시 시도해주세요.");
@@ -81,7 +123,7 @@ export default function ImageEdit({ uploadedImages = [], setResults }) {
 
       {/* ✅ 썸네일 목록 */}
       <div className="thumbnail-grid">
-        {uploadedImages.map((img, i) => (
+        {localImages.map((img, i) => (
           <div
             key={i}
             className={`thumb-wrapper ${
