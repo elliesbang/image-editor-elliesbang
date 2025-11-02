@@ -106,7 +106,6 @@ button:hover, .btn:hover {
 }
 
 /* 🌼 썸네일 */
-
 .thumbnail-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr); /* ✅ 5열 고정 */
@@ -292,4 +291,160 @@ footer a:hover {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🌼 이미지 업로드 (드래그 + 버튼 3컬럼 통합) */
+.upload-section {
+  position: relative;
+  border: 2px dashed #ffd331;
+  border-radius: 12px;
+  padding: 24px 12px;
+  background: #fffdf5;
+  text-align: center;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.upload-section.dragging {
+  background: #fff9d6;
+  border-color: #ffcc00;
+}
+
+.upload-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.upload-input {
+  display: none;
+}
+
+.upload-text {
+  font-weight: 700;
+  color: #333;
+}
+
+.upload-sub {
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: 4px;
+}
+
+/* ✅ 전체 선택 / 해제 / 삭제 버튼 */
+.control-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.control-buttons button {
+  background: #ffd331;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.control-buttons button:hover {
+  background: #ffcc00;
+}
+
+/* 🌼 처리 결과 (이미지 업로드와 동일 구조) */
+.result-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ✅ 버튼 3컬럼 */
+.result-section .control-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.result-section .control-buttons button {
+  background: #ffd331;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.result-section .control-buttons button:hover {
+  background: #ffcc00;
+}
+
+/* ✅ 결과 썸네일 5열 */
+.result-section .thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  justify-items: center;
+}
+
+.result-section .thumb-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.result-section .thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: 0.2s ease;
+}
+
+.result-section .thumb-wrapper.selected .thumb {
+  border-color: #ffd331;
+}
+
+.result-section .save-btn {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 211, 49, 0.9);
+  border: none;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #333;
+  cursor: pointer;
+}
+
+.result-section .save-btn:hover {
+  background: rgba(255, 204, 0, 0.95);
+}
+
+.download-all-wrapper {
+  margin-top: 8px;
+}
+
+.download-all-wrapper button {
+  width: 100%;
+  background: #ffd331;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.download-all-wrapper button:hover {
+  background: #ffcc00;
 }
