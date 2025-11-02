@@ -1,30 +1,44 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const { imageBase64 } = await request.json();
-    if (!imageBase64)
-      return new Response(JSON.stringify({ error: "이미지 데이터가 없습니다." }), { status: 400 });
+    const formData = await request.formData(); // ✅ FormData로 받기
+    const file = formData.get("image"); // ✅ 업로드된 파일 추출
+
+    if (!file) {
+      return new Response(
+        JSON.stringify({ error: "이미지 파일이 없습니다." }),
+        { status: 400 }
+      );
+    }
 
     const apiKey = env.OPENAI_API_KEY;
-    const formData = new FormData();
-    const buffer = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
-    formData.append("image", new Blob([buffer]), "input.png");
-    formData.append("model", "gpt-image-1");
-    formData.append("prompt", "중심 피사체만 남기고 크롭하세요");
+    const forward = new FormData();
+
+    // ✅ OpenAI API 요청용 FormData 구성
+    forward.append("image", file);
+    forward.append("model", "gpt-image-1");
+    forward.append("prompt", "중심 피사체만 남기고 크롭하세요.");
 
     const res = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}` },
-      body: formData,
+      body: forward,
     });
 
     const data = await res.json();
     const result = data?.data?.[0]?.b64_json || null;
+
+    if (!result) {
+      throw new Error("OpenAI 응답에 크롭 결과가 없습니다.");
+    }
 
     return new Response(JSON.stringify({ result }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("crop 오류:", e);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: e.message }),
+      { status: 500 }
+    );
   }
 };
