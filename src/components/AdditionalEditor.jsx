@@ -6,10 +6,14 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   const [gifNote, setGifNote] = useState("");
   const [keywords, setKeywords] = useState([]);
 
-  // ✅ targetImage 강제 변환: File 객체 or base64 문자열 모두 처리
+  // ✅ 이미지 URL 자동 추출 (File, 썸네일, base64 모두 지원)
   const getImageURL = () => {
     if (selectedUploadImage?.file) {
       return URL.createObjectURL(selectedUploadImage.file);
+    } else if (selectedUploadImage?.thumbnail) {
+      return selectedUploadImage.thumbnail;
+    } else if (selectedResultImage?.file) {
+      return URL.createObjectURL(selectedResultImage.file);
     } else if (typeof selectedResultImage === "string") {
       return `data:image/png;base64,${selectedResultImage}`;
     }
@@ -17,7 +21,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   };
 
   const imgSrc = getImageURL();
-  const disabled = !imgSrc;
+  const disabled = !imgSrc; // ✅ 이미지 없으면만 비활성화
 
   return (
     <div className="tools-wrap">
@@ -41,6 +45,11 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
             className="btn"
             disabled={!imgSrc || !resizeW}
             onClick={() => {
+              if (!imgSrc || !resizeW) {
+                alert("이미지를 선택하고 가로 크기를 입력하세요!");
+                return;
+              }
+
               const img = new Image();
               img.src = imgSrc;
 
@@ -81,7 +90,9 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
           {keywords.length > 0 ? (
             <div className="hint-box">{keywords.join(", ")}</div>
           ) : (
-            <p style={{ color: "#999", fontSize: "0.9rem" }}>분석 결과가 여기에 표시됩니다.</p>
+            <p style={{ color: "#999", fontSize: "0.9rem" }}>
+              분석 결과가 여기에 표시됩니다.
+            </p>
           )}
 
           <button
