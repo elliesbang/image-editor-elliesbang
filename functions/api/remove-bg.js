@@ -1,47 +1,42 @@
-// ✅ functions/remove-bg.js
-import { parseImageInput } from "./_sharedImageHandler";
+// functions/api/remove-bg.js
+
+import { parseImageInput } from "../../_utils/parseImageInput";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
+    const apiKey = env.HUGGINGFACE_API_KEY;
+    if (!apiKey) {
+      throw new Error("환경 변수 HUGGINGFACE_API_KEY가 설정되지 않았습니다.");
+    }
+
+    // ✅ 이미지 파싱 (Base64 or FormData 모두 지원)
     const imageBase64 = await parseImageInput(request);
-    const apiKey = env.OPENAI_API_KEY;
-
-    // ✅ Base64 → Blob 변환
     const binary = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
-    const blob = new Blob([binary], { type: "image/png" });
 
-    // ✅ OpenAI 이미지 편집 API용 FormData 구성
-    const formData = new FormData();
-    formData.append("image", blob, "input.png");
-    formData.append("model", "gpt-image-1");
-    formData.append(
-      "prompt",
-      `
-      아래 이미지를 기반으로, 인물 또는 주요 피사체만 남기고 
-      배경을 완전히 투명하게 제거한 PNG 이미지를 생성하세요.
-      결과는 투명 배경이어야 합니다.
-      `
-    );
-    formData.append("size", "1024x1024"); // ✅ 결과 사이즈 명시 (권장)
-
-    // ✅ OpenAI API 호출
-    const res = await fetch("https://api.openai.com/v1/images/edits", {
+    // ✅ Hugging Face API 호출
+    const response = await fetch("https://api-inference.huggingface.co/models/briaai/RMBG-1.4", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/octet-stream",
       },
-      body: formData,
+      body: binary,
     });
 
-    const data = await res.json();
-    const result = data?.data?.[0]?.b64_json || null;
-
-    if (!result) {
-      console.error("⚠️ OpenAI 응답:", JSON.stringify(data, null, 2));
-      throw new Error("배경제거 실패 (OpenAI 응답에 이미지 없음)");
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Hugging Face 응답 오류:", text);
+      throw new Error("배경제거 요청 실패");
     }
 
-    return new Response(JSON.stringify({ success: true, result }), {
+    const arrayBuffer = await response.arrayBuffer();
+    const base64Image = btoa(
+      new Uint8Array(arrayBuffer)
+        .reduce((data, byte) => data + String.fromCharCode(byte), "")
+    );
+
+    // ✅ Cloudflare 응답 반환
+    return new Response(JSON.stringify({ result: base64Image }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
