@@ -1,57 +1,30 @@
-import React, { useState } from "react";
+import React from "react";
 
-const ImageEditor = ({ selectedImage }) => {
-  const [loading, setLoading] = useState(false);
-
-  // ✅ 공통 처리 함수
-  const handleEdit = async (action) => {
-    if (!selectedImage) {
-      alert("이미지를 선택하세요!");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("image", selectedImage.file);
-
-      // ✅ 선택한 기능(action)에 따라 다른 API 호출
-      const res = await fetch(`/api/${action}`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error(`${action} 실패 (${res.status})`);
-
-      const data = await res.json();
-      console.log(`✅ ${action} 성공:`, data);
-
-      alert(`${action} 처리가 완료되었습니다!`);
-    } catch (err) {
-      console.error("❌ 처리 실패:", err);
-      alert("처리 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
+export default function ImageEditor({ selectedImage }) {
+  // ✅ 이미지 URL 생성기
+  const getImageURL = () => {
+    if (!selectedImage) return null;
+    if (selectedImage.file) return URL.createObjectURL(selectedImage.file);
+    if (typeof selectedImage === "string") return `data:image/png;base64,${selectedImage}`;
+    return null;
   };
 
+  const imgSrc = getImageURL();
+
   return (
-    <div className="editor-buttons">
-      <button onClick={() => handleEdit("remove-bg")} disabled={loading}>
-        {loading ? "처리 중..." : "배경제거"}
-      </button>
-      <button onClick={() => handleEdit("crop")} disabled={loading}>
-        크롭
-      </button>
-      <button onClick={() => handleEdit("remove-bg-crop")} disabled={loading}>
-        배경제거+크롭
-      </button>
-      <button onClick={() => handleEdit("denoise")} disabled={loading}>
-        노이즈 제거
-      </button>
+    <div className="editor-section">
+      {!imgSrc ? (
+        <p style={{ color: "#999", fontSize: "0.9rem" }}>이미지를 선택하세요.</p>
+      ) : (
+        <div className="preview-box">
+          <img
+            src={imgSrc}
+            alt="편집 이미지 미리보기"
+            style={{ maxWidth: "100%", borderRadius: "8px" }}
+          />
+          {/* 여기에 필터, 크롭, 배경제거 등 버튼들 위치 */}
+        </div>
+      )}
     </div>
   );
-};
-
-export default ImageEditor;
+}
