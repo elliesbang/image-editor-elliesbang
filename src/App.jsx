@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import Header from "./components/Header";
 import ImageUpload from "./components/ImageUpload";
 import ImageEditor from "./components/ImageEditor";
-import Analyzer from "./components/Analyzer";
+import ProcessResult from "./components/ProcessResult";
 import AdditionalEditor from "./components/AdditionalEditor";
 import Footer from "./components/Footer";
 import "./App.css";
@@ -16,7 +17,11 @@ function App() {
 
   return (
     <div className="app-layout">
+      {/* ✅ 헤더 */}
+      <Header />
+
       <main className="app-main">
+        {/* ✅ 이미지 업로드 섹션 */}
         <section className="app-section">
           <ImageUpload
             onImagesUploaded={handleImagesUploaded}
@@ -25,20 +30,28 @@ function App() {
           />
         </section>
 
+        {/* ✅ 이미지 편집 섹션 */}
         <section className="app-section">
           <ImageEditor selectedImage={selectedImage} />
         </section>
 
+        {/* ✅ 처리 결과 섹션 */}
         <section className="app-section">
-          <Analyzer selectedImage={selectedImage} />
+          <ProcessResult
+            images={images}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+          />
         </section>
 
+        {/* ✅ 추가 기능 섹션 */}
         <section className="app-section">
           <AdditionalEditor selectedImage={selectedImage} />
         </section>
-
-        <Footer />
       </main>
+
+      {/* ✅ 푸터 */}
+      <Footer />
     </div>
   );
 }
