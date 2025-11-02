@@ -12,7 +12,8 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
 
   return (
     <div className="tools-wrap">
-      {/* 리사이즈 */}
+
+      {/* ✅ 리사이즈 */}
       <div className="tool-row">
         <div className="row-left">
           <label className="row-label">리사이즈</label>
@@ -72,7 +73,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         </div>
       </div>
 
-      {/* 키워드 분석 */}
+      {/* ✅ 키워드 분석 */}
       <div className="tool-row">
         <div className="row-left">
           <div className="row-label">
@@ -146,6 +147,89 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
           </button>
         </div>
       </div>
+
+      {/* ✅ SVG 변환 */}
+      <div className="tool-row">
+        <div className="row-left">
+          <label className="row-label">SVG 변환</label>
+          <select
+            className="select"
+            value={svgColors}
+            onChange={(e) => setSvgColors(Number(e.target.value))}
+          >
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>{n}색</option>
+            ))}
+          </select>
+        </div>
+        <div className="row-right">
+          <button
+            className="btn"
+            disabled={disabled}
+            onClick={async () => {
+              if (!targetImage) return alert("이미지를 선택하세요!");
+              try {
+                const formData = new FormData();
+                formData.append("image", targetImage.file || targetImage);
+                formData.append("colors", svgColors);
+
+                const res = await fetch("/api/svg", { method: "POST", body: formData });
+                if (!res.ok) throw new Error(`SVG 변환 실패 (${res.status})`);
+
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+              } catch (err) {
+                console.error("SVG 변환 오류:", err);
+                alert("SVG 변환 중 오류가 발생했습니다.");
+              }
+            }}
+          >
+            SVG 변환
+          </button>
+        </div>
+      </div>
+
+      {/* ✅ GIF 변환 */}
+      <div className="tool-row">
+        <div className="row-left">
+          <label className="row-label">GIF 변환</label>
+          <textarea
+            className="textarea"
+            rows={2}
+            placeholder="예: 3프레임, 좌→우 흔들림"
+            value={gifNote}
+            onChange={(e) => setGifNote(e.target.value)}
+          />
+        </div>
+        <div className="row-right">
+          <button
+            className="btn"
+            disabled={disabled}
+            onClick={async () => {
+              if (!targetImage) return alert("이미지를 선택하세요!");
+              try {
+                const formData = new FormData();
+                formData.append("image", targetImage.file || targetImage);
+                formData.append("note", gifNote);
+
+                const res = await fetch("/api/gif", { method: "POST", body: formData });
+                if (!res.ok) throw new Error(`GIF 변환 실패 (${res.status})`);
+
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+              } catch (err) {
+                console.error("GIF 변환 오류:", err);
+                alert("GIF 변환 중 오류가 발생했습니다.");
+              }
+            }}
+          >
+            GIF 변환
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
