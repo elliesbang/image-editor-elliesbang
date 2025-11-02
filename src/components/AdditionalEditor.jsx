@@ -27,22 +27,122 @@ function AdditionalEditor({ selectedImage }) {
         </div>
       </div>
 
-      {/* 키워드 분석: 왼쪽 '키워드 분석' 버튼, 오른쪽 '복사' 버튼 */}
-      <div className="tool-row">
-        <div className="row-left">
-          <label className="row-label">키워드 분석</label>
-          <button className="btn ghost" disabled={disabled}
-            onClick={()=>setKeywords("예: soft watercolor, spring forest, gentle light")}>
-            키워드 분석
-          </button>
-        </div>
-        <div className="row-right">
-          <button className="btn" disabled={!keywords}
-            onClick={() => navigator.clipboard.writeText(keywords)}>
-            분석 결과 복사
-          </button>
-        </div>
+    {/* 키워드 분석: 한글 결과 + 아이콘 복사 + 자동 제목 */}
+<div className="tool-row">
+  <div className="row-left">
+    <div className="row-label">
+      키워드 분석{" "}
+      {keywords.length > 0 && (
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(keywords.join(", "));
+            alert("키워드가 복사되었습니다!");
+          }}
+          style={{
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            marginLeft: "6px",
+            fontSize: "1.1rem",
+          }}
+          title="분석 결과 복사"
+        >
+          📋
+        </button>
+      )}
+    </div>
+
+    {/* 🔸 분석 결과 (한글만, 쉼표로 구분) */}
+    <div className="row-fields">
+      {keywords.length > 0 ? (
+        <div className="hint-box">{keywords.join(", ")}</div>
+      ) : (
+        <p style={{ color: "#999", fontSize: "0.9rem" }}>
+          분석 결과가 여기에 표시됩니다.
+        </p>
+      )}
+    </div>
+
+    {/* 🔹 자동 제목 */}
+    {keywords.length > 0 && (
+      <div
+        style={{
+          marginTop: "6px",
+          fontWeight: "600",
+          color: "#333",
+          fontSize: "0.95rem",
+        }}
+      >
+        제목:{" "}
+        {(() => {
+          const titleSample = keywords.slice(0, 3);
+          if (titleSample.length === 1) return `${titleSample[0]}`;
+          if (titleSample.length === 2)
+            return `${titleSample[0]}와 ${titleSample[1]}`;
+          return `${titleSample[0]}, ${titleSample[1]}와 ${titleSample[2]}`;
+        })()}
+        의 풍경
       </div>
+    )}
+
+    <button
+      className="btn ghost"
+      disabled={disabled}
+      onClick={async () => {
+        if (!selectedImage) {
+          alert("이미지를 먼저 선택하세요!");
+          return;
+        }
+        try {
+          const formData = new FormData();
+          formData.append("image", selectedImage.file);
+          const res = await fetch("/api/analyze", { method: "POST", body: formData });
+          const data = await res.json();
+
+          const translateTable = {
+            flower: "꽃",
+            sky: "하늘",
+            tree: "나무",
+            person: "사람",
+            people: "사람들",
+            water: "물",
+            cloud: "구름",
+            building: "건물",
+            city: "도시",
+            mountain: "산",
+            car: "자동차",
+            dog: "강아지",
+            cat: "고양이",
+            food: "음식",
+            plant: "식물",
+            bird: "새",
+            sun: "태양",
+            sunset: "노을",
+            forest: "숲",
+            sea: "바다",
+            light: "빛",
+            art: "예술",
+            picture: "그림",
+            color: "색상",
+            paper: "종이",
+          };
+
+          const raw = (data.keywords || []).slice(0, 25);
+          const koreanOnly = raw
+            .map((k) => translateTable[k] || "")
+            .filter((v) => v);
+
+          setKeywords(koreanOnly);
+        } catch (err) {
+          console.error(err);
+          alert("분석 중 오류가 발생했습니다.");
+        }
+      }}
+    >
+      키워드 분석
+    </button>
+  </div>
+</div>
 
       {/* SVG: 드롭다운(단색~6색) + 버튼 */}
       <div className="tool-row">
