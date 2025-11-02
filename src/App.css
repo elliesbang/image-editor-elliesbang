@@ -240,3 +240,55 @@ footer a {
 footer a:hover {
   text-decoration: underline;
 }
+
+/* 🌼 푸터 모달 (중앙 팝업형) */
+.modal-overlay {
+  position: fixed;          /* ✅ 화면 전체 고정 */
+  inset: 0;                 /* top/right/bottom/left: 0 */
+  background: rgba(0, 0, 0, 0.4); /* 어두운 반투명 배경 */
+  display: flex;
+  align-items: center;      /* 수직 중앙 */
+  justify-content: center;  /* 수평 중앙 */
+  z-index: 1000;            /* 다른 요소 위 */
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 20px;
+  width: 90%;
+  max-width: 420px;         /* 모바일 폭에 맞춤 */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.2s ease;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #777;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+.modal-body {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+/* 살짝 부드럽게 등장 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
