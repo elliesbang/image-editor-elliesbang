@@ -109,4 +109,8 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
     </div>
   ))}
 </div>
-      
+  </div> // ✅ 여기서 꼭 닫혀야 함
+); // ✅ return 닫힘
+} // ✅ 함수 닫힘
+
+export default ImageUpload;
