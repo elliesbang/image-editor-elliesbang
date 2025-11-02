@@ -1,52 +1,54 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const { imageBase64 } = await request.json();
-    if (!imageBase64)
-      return new Response(JSON.stringify({ error: "이미지가 필요합니다." }), { status: 400 });
+    // ✅ 1. 프론트에서 보낸 FormData 받기
+    const formData = await request.formData();
+    const file = formData.get("image");
+
+    if (!file) {
+      return new Response(
+        JSON.stringify({ error: "이미지를 선택해주세요." }),
+        { status: 400 }
+      );
+    }
 
     const apiKey = env.OPENAI_API_KEY;
 
-    const buffer = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
-    const formData = new FormData();
-    formData.append("image", new Blob([buffer]), "input.png");
-    formData.append("model", "gpt-image-1");
-    formData.append(
+    // ✅ 2. OpenAI API 전송용 FormData 구성
+    const forward = new FormData();
+    forward.append("model", "gpt-image-1");
+    forward.append("image", file);
+    forward.append(
       "prompt",
       `
-      이미지를 원본 색상을 최대한 유지하면서 SVG 벡터로 변환하세요.
-      단, 다음 조건을 모두 지키세요:
-      - 반드시 viewBox 속성을 포함합니다.
-      - stroke 속성은 모두 제거합니다.
-      - fill 속성은 각 영역별 색상으로 설정합니다.
-      - 단순화는 하지 않고, 편집이 용이하도록 경로(path) 분리합니다.
-      - SVG 코드 내에서 색상(hex 코드)은 직접 지정되어야 합니다.
-      - SVG 파일 크기는 150KB 이하로 최적화합니다.
-      출력은 순수 SVG 코드로 반환하세요.
+      주어진 이미지를 바탕으로,
+      실제 움직이지는 않지만 빛의 잔상, 흔들림, 반짝임, 잔광 효과가 있는
+      예술적 GIF 느낌의 이미지를 생성하세요.
       `
     );
 
+    // ✅ 3. OpenAI API 호출
     const res = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: formData,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: forward,
     });
 
     const data = await res.json();
     const result = data?.data?.[0]?.b64_json;
-    if (!result) throw new Error("SVG 변환 실패");
 
-    // ⚙️ SVG 디코딩 후 문자열로 반환 (편집 가능)
-    const svgString = atob(result);
+    if (!result) throw new Error("OpenAI 응답에 결과 이미지가 없습니다.");
 
-    // ⚠️ 용량 제한
-    const sizeKB = new Blob([svgString]).size / 1024;
-    if (sizeKB > 150) throw new Error(`SVG 크기 초과 (${Math.round(sizeKB)}KB)`);
-
-    return new Response(JSON.stringify({ svg: svgString }), {
+    // ✅ 4. 브라우저로 반환
+    return new Response(JSON.stringify({ result }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("SVG 변환 오류:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error("GIF 변환 오류:", err);
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
+    );
   }
 };
