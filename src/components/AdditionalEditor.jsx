@@ -11,23 +11,64 @@ function AdditionalEditor({ selectedImage }) {
 
   return (
     <div className="tools-wrap">
+      
+{/* 리사이즈: 가로 입력 → 세로 자동 계산 */}
+<div className="tool-row">
+  <div className="row-left">
+    <label className="row-label">리사이즈</label>
+    <div className="row-fields">
+      <input
+        className="input"
+        type="number"
+        placeholder="가로(px)"
+        value={resizeW}
+        onChange={(e) => setResizeW(e.target.value)}
+      />
+    </div>
+  </div>
 
-      {/* 리사이즈: 왼쪽 입력, 오른쪽 버튼 */}
-      <div className="tool-row">
-        <div className="row-left">
-          <label className="row-label">리사이즈</label>
-          <div className="row-fields">
-            <input className="input" type="number" placeholder="가로(px)" value={resizeW} onChange={(e)=>setResizeW(e.target.value)} />
-            <span className="xmark">×</span>
-            <input className="input" type="number" placeholder="세로(px)" value={resizeH} onChange={(e)=>setResizeH(e.target.value)} />
-          </div>
-        </div>
-        <div className="row-right">
-          <button className="btn" disabled={disabled}>리사이즈</button>
-        </div>
-      </div>
+  <div className="row-right">
+    <button
+      className="btn"
+      disabled={disabled || !resizeW}
+      onClick={() => {
+        if (!selectedImage || !resizeW) {
+          alert("이미지를 선택하고 가로 크기를 입력하세요!");
+          return;
+        }
 
-    {/* 키워드 분석: 한글 결과 + 아이콘 복사 + 자동 제목 */}
+        // ✅ 원본 이미지 불러오기
+        const img = new Image();
+        img.src = URL.createObjectURL(selectedImage.file);
+
+        img.onload = () => {
+          const aspect = img.height / img.width;
+          const newW = parseInt(resizeW, 10);
+          const newH = Math.round(newW * aspect);
+
+          // ✅ 리사이즈 수행 (Canvas)
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = newW;
+          canvas.height = newH;
+          ctx.drawImage(img, 0, 0, newW, newH);
+
+          canvas.toBlob((blob) => {
+            const resizedFile = new File([blob], "resized.png", {
+              type: "image/png",
+            });
+            alert(`리사이즈 완료! ${newW} × ${newH}px`);
+            console.log("리사이즈된 파일:", resizedFile);
+          }, "image/png");
+        };
+      }}
+    >
+      리사이즈
+    </button>
+  </div>
+</div>
+
+   {/* 키워드 분석 */}
 <div className="tool-row">
   <div className="row-left">
     <div className="row-label">
@@ -52,22 +93,22 @@ function AdditionalEditor({ selectedImage }) {
       )}
     </div>
 
-    {/* 🔸 분석 결과 (한글만, 쉼표로 구분) */}
-    <div className="row-fields">
-      {keywords.length > 0 ? (
-        <div className="hint-box">{keywords.join(", ")}</div>
-      ) : (
-        <p style={{ color: "#999", fontSize: "0.9rem" }}>
-          분석 결과가 여기에 표시됩니다.
-        </p>
-      )}
-    </div>
+    {/* 🔸 분석 결과 버튼 위로 이동 */}
+    {keywords.length > 0 ? (
+      <div className="hint-box" style={{ marginBottom: "10px" }}>
+        {keywords.join(", ")}
+      </div>
+    ) : (
+      <p style={{ color: "#999", fontSize: "0.9rem", marginBottom: "8px" }}>
+        분석 결과가 여기에 표시됩니다.
+      </p>
+    )}
 
     {/* 🔹 자동 제목 */}
     {keywords.length > 0 && (
       <div
         style={{
-          marginTop: "6px",
+          marginBottom: "10px",
           fontWeight: "600",
           color: "#333",
           fontSize: "0.95rem",
@@ -99,42 +140,21 @@ function AdditionalEditor({ selectedImage }) {
           const res = await fetch("/api/analyze", { method: "POST", body: formData });
           const data = await res.json();
 
+          // ✅ 키워드 변환 로직
           const translateTable = {
-            flower: "꽃",
-            sky: "하늘",
-            tree: "나무",
-            person: "사람",
-            people: "사람들",
-            water: "물",
-            cloud: "구름",
-            building: "건물",
-            city: "도시",
-            mountain: "산",
-            car: "자동차",
-            dog: "강아지",
-            cat: "고양이",
-            food: "음식",
-            plant: "식물",
-            bird: "새",
-            sun: "태양",
-            sunset: "노을",
-            forest: "숲",
-            sea: "바다",
-            light: "빛",
-            art: "예술",
-            picture: "그림",
-            color: "색상",
-            paper: "종이",
+            flower: "꽃", sky: "하늘", tree: "나무", person: "사람",
+            people: "사람들", water: "물", cloud: "구름", building: "건물",
+            city: "도시", mountain: "산", car: "자동차", dog: "강아지",
+            cat: "고양이", food: "음식", plant: "식물", bird: "새",
+            sun: "태양", sunset: "노을", forest: "숲", sea: "바다",
+            light: "빛", art: "예술", picture: "그림", color: "색상", paper: "종이",
           };
 
           const raw = (data.keywords || []).slice(0, 25);
-          const koreanOnly = raw
-            .map((k) => translateTable[k] || "")
-            .filter((v) => v);
-
+          const koreanOnly = raw.map((k) => translateTable[k] || "").filter((v) => v);
           setKeywords(koreanOnly);
         } catch (err) {
-          console.error(err);
+          console.error("분석 오류:", err);
           alert("분석 중 오류가 발생했습니다.");
         }
       }}
