@@ -41,6 +41,13 @@
   }
 }
 
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8vw, 1fr));
+  gap: 4px;
+  justify-items: center;
+}
+
 .thumbnail-grid .thumb,
 .thumb-image {
   width: 100%;
@@ -78,7 +85,6 @@
 
 @media (max-width: 768px) {
   .thumbnail-grid {
-    grid-template-columns: repeat(10, minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(5, 1fr);
   }
 }
