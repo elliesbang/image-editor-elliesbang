@@ -7,18 +7,29 @@ export const onRequestPost = async ({ request, env }) => {
 
     const apiKey = env.OPENAI_API_KEY;
 
+    const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+
     const body = {
-      model: "gpt-4o", // ✅ gpt-4o-mini → gpt-4o 변경
+      model: "gpt-4o", // ✅ 멀티모달 지원 모델
       input: [
         {
           role: "user",
           content: [
-            { type: "input_text", text: "이 이미지를 분석해 한글 키워드 25개와 제목을 JSON으로 만들어줘." },
-            { type: "input_image", image_data: await file.arrayBuffer() },
+            {
+              type: "input_text",
+              text: `
+                이미지를 분석하여 한글 키워드 25개와 공통된 의미의 제목 1개를 JSON으로 만들어 주세요.
+                형식 예시:
+                {"keywords":["자연","하늘","초원",...],"title":"푸른 들판의 햇살"}
+              `,
+            },
+            {
+              type: "input_image",
+              image_url: `data:image/png;base64,${base64}`,
+            },
           ],
         },
       ],
-      max_output_tokens: 500,
     };
 
     const res = await fetch("https://api.openai.com/v1/responses", {
@@ -31,29 +42,19 @@ export const onRequestPost = async ({ request, env }) => {
     });
 
     const data = await res.json();
-
     const outputText =
       data.output?.[0]?.content?.[0]?.text ||
       data.output_text ||
       data.choices?.[0]?.message?.content ||
       "";
 
-    // ✅ 방어 로직 추가
-    if (!outputText.includes("{") || !outputText.includes("}")) {
-      throw new Error("OpenAI 응답이 비어 있습니다.");
-    }
+    if (!outputText.includes("{")) throw new Error("OpenAI 응답이 비어 있습니다.");
 
     const jsonStart = outputText.indexOf("{");
     const jsonEnd = outputText.lastIndexOf("}");
-    const jsonString = outputText.slice(jsonStart, jsonEnd + 1);
-    const parsed = JSON.parse(jsonString);
+    const parsed = JSON.parse(outputText.slice(jsonStart, jsonEnd + 1));
 
-    const keywords = (parsed.keywords || [])
-      .filter((k) => /[가-힣]/.test(k))
-      .slice(0, 25);
-    const title = parsed.title || "이미지 키워드 분석";
-
-    return new Response(JSON.stringify({ keywords, title }), {
+    return new Response(JSON.stringify(parsed), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
