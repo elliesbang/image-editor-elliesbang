@@ -4,6 +4,7 @@ import ImageEditor from "./components/ImageEditor";
 import Analyzer from "./components/Analyzer";
 import AdditionalEditor from "./components/AdditionalEditor";
 import Footer from "./components/Footer";
+import "./App.css";
 
 function App() {
   const [images, setImages] = useState([]);
