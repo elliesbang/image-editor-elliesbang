@@ -46,8 +46,13 @@ export default function ProcessResult({ results = [] }) {
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, "elliesbang_results.zip");
   };
-      
-       {/* ✅ 컨트롤 버튼 */}
+
+  // ✅ JSX 반환 부분 추가됨
+  return (
+    <section className="app-section">
+      <h2 className="section-header">🎉 처리 결과</h2>
+
+      {/* ✅ 컨트롤 버튼 */}
       <div className="result-actions">
         <button onClick={handleSelectAll}>전체 선택</button>
         <button onClick={handleDeselectAll}>전체 해제</button>
@@ -86,6 +91,7 @@ export default function ProcessResult({ results = [] }) {
         )}
       </div>
 
+      {/* ✅ 전체 다운로드 버튼 */}
       {results.length > 0 && (
         <div className="download-all-wrapper">
           <button className="download-all" onClick={handleDownloadAll}>
