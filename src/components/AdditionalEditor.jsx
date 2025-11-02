@@ -4,11 +4,20 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
   const [resizeW, setResizeW] = useState("");
   const [svgColors, setSvgColors] = useState(1);
   const [gifNote, setGifNote] = useState("");
-  const [keywords, setKeywords] = useState("");
+  const [keywords, setKeywords] = useState([]);
 
-  // ✅ 업로드 or 처리결과 중 하나라도 선택되어 있으면 버튼 활성화
-  const targetImage = selectedUploadImage || selectedResultImage;
-  const disabled = !targetImage;
+  // ✅ targetImage 강제 변환: File 객체 or base64 문자열 모두 처리
+  const getImageURL = () => {
+    if (selectedUploadImage?.file) {
+      return URL.createObjectURL(selectedUploadImage.file);
+    } else if (typeof selectedResultImage === "string") {
+      return `data:image/png;base64,${selectedResultImage}`;
+    }
+    return null;
+  };
+
+  const imgSrc = getImageURL();
+  const disabled = !imgSrc;
 
   return (
     <div className="tools-wrap">
@@ -30,21 +39,15 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={disabled || !resizeW}
+            disabled={!imgSrc || !resizeW}
             onClick={() => {
-              if (!targetImage || !resizeW) {
-                alert("이미지를 선택하고 가로 크기를 입력하세요!");
-                return;
-              }
-
               const img = new Image();
-              img.src = URL.createObjectURL(targetImage.file || targetImage);
+              img.src = imgSrc;
 
               img.onload = () => {
                 const aspect = img.height / img.width;
                 const newW = parseInt(resizeW, 10);
                 const newH = Math.round(newW * aspect);
-
                 const canvas = document.createElement("canvas");
                 const ctx = canvas.getContext("2d");
                 canvas.width = newW;
@@ -56,13 +59,11 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
                     type: "image/png",
                   });
                   const url = URL.createObjectURL(resizedFile);
-
                   window.dispatchEvent(
                     new CustomEvent("imageProcessed", {
                       detail: { file: resizedFile, thumbnail: url },
                     })
                   );
-
                   alert(`리사이즈 완료! ${newW} × ${newH}px`);
                 }, "image/png");
               };
@@ -76,53 +77,23 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
       {/* ✅ 키워드 분석 */}
       <div className="tool-row">
         <div className="row-left">
-          <div className="row-label">
-            키워드 분석{" "}
-            {keywords.length > 0 && (
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(keywords.join(", "));
-                  alert("키워드가 복사되었습니다!");
-                }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  marginLeft: "6px",
-                  fontSize: "1.1rem",
-                }}
-                title="분석 결과 복사"
-              >
-                📋
-              </button>
-            )}
-          </div>
-
+          <div className="row-label">키워드 분석</div>
           {keywords.length > 0 ? (
-            <div className="hint-box" style={{ marginBottom: "10px" }}>
-              {keywords.join(", ")}
-            </div>
+            <div className="hint-box">{keywords.join(", ")}</div>
           ) : (
-            <p style={{ color: "#999", fontSize: "0.9rem", marginBottom: "8px" }}>
-              분석 결과가 여기에 표시됩니다.
-            </p>
+            <p style={{ color: "#999", fontSize: "0.9rem" }}>분석 결과가 여기에 표시됩니다.</p>
           )}
 
           <button
             className="btn ghost"
-            disabled={disabled}
+            disabled={!imgSrc}
             onClick={async () => {
-              if (!targetImage) {
-                alert("이미지를 먼저 선택하세요!");
-                return;
-              }
               try {
+                const blob = await fetch(imgSrc).then((r) => r.blob());
+                const file = new File([blob], "target.png", { type: "image/png" });
                 const formData = new FormData();
-                formData.append("image", targetImage.file || targetImage);
-                const res = await fetch("/api/analyze", {
-                  method: "POST",
-                  body: formData,
-                });
+                formData.append("image", file);
+                const res = await fetch("/api/analyze", { method: "POST", body: formData });
                 const data = await res.json();
 
                 const translateTable = {
@@ -135,7 +106,7 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
                 };
 
                 const raw = (data.keywords || []).slice(0, 25);
-                const koreanOnly = raw.map((k) => translateTable[k] || "").filter((v) => v);
+                const koreanOnly = raw.map((k) => translateTable[k] || "").filter(Boolean);
                 setKeywords(koreanOnly);
               } catch (err) {
                 console.error("분석 오류:", err);
@@ -165,19 +136,18 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={disabled}
+            disabled={!imgSrc}
             onClick={async () => {
-              if (!targetImage) return alert("이미지를 선택하세요!");
               try {
+                const blob = await fetch(imgSrc).then((r) => r.blob());
+                const file = new File([blob], "target.png", { type: "image/png" });
                 const formData = new FormData();
-                formData.append("image", targetImage.file || targetImage);
+                formData.append("image", file);
                 formData.append("colors", svgColors);
-
                 const res = await fetch("/api/svg", { method: "POST", body: formData });
                 if (!res.ok) throw new Error(`SVG 변환 실패 (${res.status})`);
-
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
+                const blobRes = await res.blob();
+                const url = URL.createObjectURL(blobRes);
                 window.open(url, "_blank");
               } catch (err) {
                 console.error("SVG 변환 오류:", err);
@@ -205,19 +175,18 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
         <div className="row-right">
           <button
             className="btn"
-            disabled={disabled}
+            disabled={!imgSrc}
             onClick={async () => {
-              if (!targetImage) return alert("이미지를 선택하세요!");
               try {
+                const blob = await fetch(imgSrc).then((r) => r.blob());
+                const file = new File([blob], "target.png", { type: "image/png" });
                 const formData = new FormData();
-                formData.append("image", targetImage.file || targetImage);
+                formData.append("image", file);
                 formData.append("note", gifNote);
-
                 const res = await fetch("/api/gif", { method: "POST", body: formData });
                 if (!res.ok) throw new Error(`GIF 변환 실패 (${res.status})`);
-
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
+                const blobRes = await res.blob();
+                const url = URL.createObjectURL(blobRes);
                 window.open(url, "_blank");
               } catch (err) {
                 console.error("GIF 변환 오류:", err);
@@ -229,7 +198,6 @@ function AdditionalEditor({ selectedUploadImage, selectedResultImage }) {
           </button>
         </div>
       </div>
-
     </div>
   );
 }
