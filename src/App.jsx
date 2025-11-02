@@ -11,6 +11,7 @@ import "./App.css";
 function App() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedResult, setSelectedResult] = useState(null); // ✅ 추가
   const [loginOpen, setLoginOpen] = useState(false);
 
   const handleImagesUploaded = (newImages) => {
@@ -42,15 +43,16 @@ function App() {
             images={images}
             selectedImage={selectedImage}
             setSelectedImage={setSelectedImage}
+            setSelectedResult={setSelectedResult}  // ✅ 결과 선택 연결
           />
         </section>
 
         <section className="app-section">
           <div className="section-header">⚙️ 추가 기능</div>
           <AdditionalEditor
-  selectedUploadImage={selectedImage}           // 업로드 쪽 선택
-  selectedResultImage={selectedResult}          // 처리 결과 쪽 선택
-/>
+            selectedImage={selectedImage}         // 업로드 쪽 선택
+            selectedResult={selectedResult}       // 처리결과 쪽 선택
+          />
         </section>
       </main>
 
