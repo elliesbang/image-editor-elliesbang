@@ -1,60 +1,43 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const formData = await request.formData();
-    const file = formData.get("image");
-    if (!file)
-      return new Response(JSON.stringify({ error: "이미지를 업로드하세요." }), { status: 400 });
+    let imageBase64 = null;
 
-    const apiKey = env.OPENAI_API_KEY;
+    // ✅ Content-Type 확인 후 JSON 또는 FormData 모두 처리
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      imageBase64 = body.imageBase64;
+    } else if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const file = formData.get("image");
+      const arrayBuffer = await file.arrayBuffer();
+      imageBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    }
 
-    const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+    if (!imageBase64)
+      return new Response(
+        JSON.stringify({ error: "이미지 데이터가 없습니다." }),
+        { status: 400 }
+      );
 
-    const body = {
-      model: "gpt-4o", // ✅ 멀티모달 지원 모델
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `
-                이미지를 분석하여 한글 키워드 25개와 공통된 의미의 제목 1개를 JSON으로 만들어 주세요.
-                형식 예시:
-                {"keywords":["자연","하늘","초원",...],"title":"푸른 들판의 햇살"}
-              `,
-            },
-            {
-              type: "input_image",
-              image_url: `data:image/png;base64,${base64}`,
-            },
-          ],
-        },
-      ],
-    };
-
-    const res = await fetch("https://api.openai.com/v1/responses", {
+    // ✅ OpenAI API 호출
+    const response = await fetch("https://api.openai.com/v1/images/edits", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        image: imageBase64,
+        prompt: "이미지의 주요 특징을 분석해 키워드를 추출하세요.",
+      }),
     });
 
-    const data = await res.json();
-    const outputText =
-      data.output?.[0]?.content?.[0]?.text ||
-      data.output_text ||
-      data.choices?.[0]?.message?.content ||
-      "";
+    const data = await response.json();
+    if (!data) throw new Error("분석 실패");
 
-    if (!outputText.includes("{")) throw new Error("OpenAI 응답이 비어 있습니다.");
-
-    const jsonStart = outputText.indexOf("{");
-    const jsonEnd = outputText.lastIndexOf("}");
-    const parsed = JSON.parse(outputText.slice(jsonStart, jsonEnd + 1));
-
-    return new Response(JSON.stringify(parsed), {
+    return new Response(JSON.stringify({ success: true, keywords: data.keywords || [] }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
