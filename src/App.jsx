@@ -15,17 +15,30 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <ImageUpload
-        onImagesUploaded={handleImagesUploaded}
-        selectedImage={selectedImage}
-        setSelectedImage={setSelectedImage}
-      />
+    <div className="app-layout">
+      <main className="app-main">
+        <section className="app-section">
+          <ImageUpload
+            onImagesUploaded={handleImagesUploaded}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+          />
+        </section>
 
-      <ImageEditor selectedImage={selectedImage} />
-      <Analyzer selectedImage={selectedImage} />
-      <AdditionalEditor selectedImage={selectedImage} />
-      <Footer />
+        <section className="app-section">
+          <ImageEditor selectedImage={selectedImage} />
+        </section>
+
+        <section className="app-section">
+          <Analyzer selectedImage={selectedImage} />
+        </section>
+
+        <section className="app-section">
+          <AdditionalEditor selectedImage={selectedImage} />
+        </section>
+
+        <Footer />
+      </main>
     </div>
   );
 }
