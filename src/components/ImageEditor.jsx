@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function ImageEditor({ selectedImage }) {
-  // ✅ 이미지 URL 통합 처리 (File or base64 모두 지원)
+  // ✅ 이미지 URL 통합 처리
   const getImageURL = () => {
     if (!selectedImage) return null;
     if (selectedImage.file) return URL.createObjectURL(selectedImage.file);
@@ -11,7 +11,7 @@ export default function ImageEditor({ selectedImage }) {
 
   const imgSrc = getImageURL();
 
-  // ✅ 서버 호출 함수
+  // ✅ 서버 호출
   const processImage = async (endpoint) => {
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
 
@@ -29,7 +29,6 @@ export default function ImageEditor({ selectedImage }) {
       if (!res.ok) throw new Error(`${endpoint} 요청 실패`);
       const data = await res.json();
 
-      // ✅ 새 이미지 결과를 전역으로 전달
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
           detail: { file, thumbnail: data.result },
@@ -45,6 +44,7 @@ export default function ImageEditor({ selectedImage }) {
 
   return (
     <div className="editor-section">
+      {/* ✅ 이미지가 없을 때 */}
       {!imgSrc ? (
         <p style={{ color: "#999", fontSize: "0.9rem" }}>이미지를 선택하세요.</p>
       ) : (
