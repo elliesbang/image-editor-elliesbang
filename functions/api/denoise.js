@@ -1,41 +1,29 @@
-// ✅ functions/denoise.js
-import { parseImageInput } from "./_sharedImageHandler";
-
-export const onRequestPost = async ({ request, env }) => {
+export const onRequestPost = async ({ request }) => {
   try {
-    // ✅ JSON / FormData 모두 지원
-    const imageBase64 = await parseImageInput(request);
-    const apiKey = env.OPENAI_API_KEY;
+    const formData = await request.formData();
+    const imageFile = formData.get("image");
+    if (!imageFile)
+      return new Response(JSON.stringify({ error: "이미지가 없습니다." }), { status: 400 });
 
-    // ✅ Base64 → Blob 변환 후 FormData 구성
-    const binary = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
-    const blob = new Blob([binary], { type: "image/png" });
-    const formData = new FormData();
-    formData.append("image", blob, "input.png");
-    formData.append("model", "gpt-image-1");
-    formData.append("prompt", "이미지의 노이즈를 제거하고 선명하게 만드세요.");
+    const blob = await imageFile.arrayBuffer();
+    const imageBitmap = await createImageBitmap(await new Blob([blob]));
+    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+    const ctx = canvas.getContext("2d");
 
-    // ✅ OpenAI 이미지 편집 API 호출
-    const res = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: formData,
-    });
+    ctx.filter = "blur(1.5px)";
+    ctx.drawImage(imageBitmap, 0, 0);
 
-    const data = await res.json();
-    const result = data?.data?.[0]?.b64_json || null;
+    const blobResult = await canvas.convertToBlob({ type: "image/png" });
+    const buffer = await blobResult.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
-    if (!result) {
-      console.error("⚠️ OpenAI 응답:", JSON.stringify(data, null, 2));
-      throw new Error("노이즈 제거 실패 (OpenAI 응답에 이미지 없음)");
-    }
-
-    // ✅ Cloudflare 응답 반환
-    return new Response(JSON.stringify({ success: true, result }), {
+    return new Response(JSON.stringify({ result: base64, success: true }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("denoise 오류:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error("🚨 denoise 오류:", err);
+    return new Response(JSON.stringify({ success: false, error: err.message }), {
+      status: 500,
+    });
   }
 };
