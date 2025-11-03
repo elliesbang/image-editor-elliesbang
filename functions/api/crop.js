@@ -1,5 +1,3 @@
-import sharp from "sharp";
-
 export const onRequestPost = async ({ request }) => {
   try {
     const formData = await request.formData();
@@ -12,29 +10,50 @@ export const onRequestPost = async ({ request }) => {
       );
     }
 
-    // ✅ 파일을 Buffer로 변환
-    const buffer = Buffer.from(await imageFile.arrayBuffer());
-    let image = sharp(buffer);
+    // ✅ Blob → ImageBitmap 변환
+    const blob = imageFile;
+    const imageBitmap = await createImageBitmap(blob);
+    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(imageBitmap, 0, 0);
 
-    // ✅ 메타데이터 확인
-    const meta = await image.metadata();
+    // ✅ 이미지 데이터 픽셀 분석
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = canvas.width,
+      minY = canvas.height,
+      maxX = 0,
+      maxY = 0;
 
-    // ✅ 투명 또는 흰색 여백 자동 제거
-    try {
-      // 투명 여백 제거 (투명도 있는 이미지)
-      image = image.trim({ threshold: 10 });
-    } catch {
-      // 흰 배경 이미지의 경우 흰색 여백 제거
-      image = image
-        .flatten({ background: "#ffffff" })
-        .trim({ threshold: 240 });
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const alpha = imgData[(y * canvas.width + x) * 4 + 3];
+        if (alpha > 10) { // 투명하지 않은 픽셀 감지
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
     }
 
-    // ✅ 결과 버퍼 생성
-    const outputBuffer = await image.toBuffer();
+    // ✅ 최소 여백(3~5%) 남기기
+    const paddingX = Math.floor((maxX - minX) * 0.03);
+    const paddingY = Math.floor((maxY - minY) * 0.03);
+    minX = Math.max(0, minX - paddingX);
+    minY = Math.max(0, minY - paddingY);
+    maxX = Math.min(canvas.width, maxX + paddingX);
+    maxY = Math.min(canvas.height, maxY + paddingY);
 
-    // ✅ base64 인코딩 변환
-    const base64 = outputBuffer.toString("base64");
+    // ✅ 크롭된 캔버스 생성
+    const cropW = maxX - minX + 1;
+    const cropH = maxY - minY + 1;
+    const croppedCanvas = new OffscreenCanvas(cropW, cropH);
+    const croppedCtx = croppedCanvas.getContext("2d");
+    croppedCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+    // ✅ Base64로 반환
+    const croppedBlob = await croppedCanvas.convertToBlob({ type: "image/png" });
+    const base64 = Buffer.from(await croppedBlob.arrayBuffer()).toString("base64");
 
     return new Response(JSON.stringify({ result: base64 }), {
       headers: { "Content-Type": "application/json" },
