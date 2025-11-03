@@ -1,53 +1,50 @@
-export const onRequestPost = async ({ request, env }) => {
+export const onRequestPost = async ({ request }) => {
   try {
+    // ✅ 1. formData로 이미지와 width 받기
     const formData = await request.formData();
     const imageFile = formData.get("image");
     const width = parseInt(formData.get("width"));
+    const keepAspect = formData.get("keepAspect") === "true";
 
     if (!imageFile || !width) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "이미지 또는 width 값이 없습니다.",
-        }),
+        JSON.stringify({ success: false, error: "이미지 또는 width 값이 없습니다." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // ✅ OpenAI API 호출 준비
-    const apiKey = env.OPENAI_API_KEY;
-    const openaiForm = new FormData();
-    openaiForm.append("image", imageFile, "input.png");
-    openaiForm.append("model", "gpt-image-1");
-    openaiForm.append("size", `${width}x${width}`); // 정사각 기준으로 리사이즈
+    // ✅ 2. 이미지 Blob을 ArrayBuffer로 변환
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const base64 = btoa(String.fromCharCode(...bytes));
+    const imageUrl = `data:image/png;base64,${base64}`;
 
-    // ✅ OpenAI 이미지 편집 API 호출
-    const response = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: openaiForm,
+    // ✅ 3. HTMLCanvasElement 사용 (Cloudflare Workers에서도 지원)
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = imageUrl;
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`OpenAI 리사이즈 실패 (${response.status}): ${errText}`);
-    }
+    // ✅ 4. 비율 계산
+    const aspect = image.width / image.height;
+    const newW = width;
+    const newH = keepAspect ? Math.round(width / aspect) : width;
 
-    const result = await response.json();
+    // ✅ 5. Canvas 생성 후 그리기
+    const canvas = new OffscreenCanvas(newW, newH);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0, newW, newH);
 
-    // ✅ 결과 파싱
-    const base64 = result.data?.[0]?.b64_json;
-    if (!base64) throw new Error("리사이즈 결과가 없습니다.");
+    // ✅ 6. Blob → Base64 변환
+    const blob = await canvas.convertToBlob({ type: "image/png" });
+    const resizedBuffer = await blob.arrayBuffer();
+    const resizedBase64 = btoa(String.fromCharCode(...new Uint8Array(resizedBuffer)));
 
-    // ✅ 성공 응답
+    // ✅ 7. 성공 응답
     return new Response(
-      JSON.stringify({
-        success: true,
-        result: base64,
-        message: "OpenAI 리사이즈 완료",
-      }),
+      JSON.stringify({ success: true, result: resizedBase64 }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -55,7 +52,7 @@ export const onRequestPost = async ({ request, env }) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: "리사이즈 처리 중 오류 발생: " + err.message,
+        error: "리사이즈 중 오류 발생: " + err.message,
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
