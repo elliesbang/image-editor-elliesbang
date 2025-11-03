@@ -245,3 +245,30 @@ button:hover, .btn:hover {
   .header-left { font-size: 1.4rem; }
   .header-button { padding: 8px 20px; }
 }
+
+/* 전체 페이지를 세로 레이아웃으로 정렬 */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* 화면 전체 높이 확보 */
+}
+
+/* 메인 콘텐츠는 남는 공간을 차지 */
+main {
+  flex: 1;
+}
+
+/* 푸터는 항상 하단 고정처럼 */
+footer {
+  text-align: center;
+  padding: 20px 0;
+  background-color: #fff9c4; /* 엘리의방 테마 노랑 톤 */
+  font-size: 0.9rem;
+  color: #555;
+}
