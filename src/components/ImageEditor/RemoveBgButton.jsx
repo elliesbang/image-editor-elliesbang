@@ -3,31 +3,38 @@ import { getImageURL } from "./utils";
 
 export default function RemoveBgButton({ selectedImage, disabled }) {
   const handleClick = async () => {
-    const imgSrc = getImageURL(selectedImage);
-    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
-
     try {
+      let imgSrc = getImageURL(selectedImage);
+      if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
+
+      // ✅ blob: URL이면 dataURL로 변환
+      if (!imgSrc.startsWith("data:image")) {
+        const blob = await fetch(imgSrc).then((r) => r.blob());
+        const reader = new FileReader();
+        const base64 = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(blob);
+        });
+        imgSrc = `data:image/png;base64,${base64}`;
+      }
+
       const base64 = imgSrc.split(",")[1];
-      const response = await fetch("/api/remove-bg", {
+
+      const res = await fetch("/api/remove-bg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64 }),
       });
 
-      const data = await response.json();
-      if (!data.image) throw new Error("서버에서 이미지가 반환되지 않았습니다.");
+      const data = await res.json();
+      if (!data.image) throw new Error("배경제거 실패");
 
-      const cleanedBase64 = data.image.split(",")[1];
-      const blob = await fetch(`data:image/png;base64,${cleanedBase64}`).then((r) =>
-        r.blob()
-      );
-      const file = new File([blob], "background_removed.png", {
-        type: "image/png",
-      });
+      const fileBlob = await fetch(data.image).then((r) => r.blob());
+      const file = new File([fileBlob], "remove_bg.png", { type: "image/png" });
 
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
-          detail: { file, thumbnail: cleanedBase64 },
+          detail: { file, thumbnail: data.image.split(",")[1] },
         })
       );
 
