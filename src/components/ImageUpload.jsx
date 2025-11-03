@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const ImageUpload = ({
   onImagesUploaded,
@@ -10,22 +10,30 @@ const ImageUpload = ({
   const [images, setImages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  // ✅ 이미지 업로드 (50장 제한)
+  // ✅ 업로드 중복 방지 + 썸네일 생성
   const handleImageUpload = (files) => {
     if (files.length > 50) {
       alert("한 번에 50장까지만 업로드할 수 있습니다.");
       return;
     }
 
-    const newImages = Array.from(files).map((file) => ({
-      file,
-      thumbnail: URL.createObjectURL(file),
-    }));
+    const fileArray = Array.from(files);
+    const newImages = fileArray
+      .filter((file) => !images.some((img) => img.file.name === file.name)) // ✅ 중복 방지
+      .map((file) => ({
+        file,
+        thumbnail: URL.createObjectURL(file),
+        id: `${file.name}-${file.lastModified}`, // ✅ 고유 ID
+      }));
 
-    setImages((prev) => [...prev, ...newImages]);
-    onImagesUploaded(newImages);
+    const updated = [...images, ...newImages];
+    setImages(updated);
+    setSelectedImages(updated);
+    if (newImages.length > 0) setSelectedImage(newImages[0]);
+    onImagesUploaded?.(newImages);
   };
 
+  // ✅ 파일 input 업로드
   const handleFileChange = (e) => handleImageUpload(e.target.files);
 
   // ✅ 드래그 & 드롭
@@ -35,36 +43,35 @@ const ImageUpload = ({
     setIsDragging(false);
 
     const { files } = e.dataTransfer;
-    if (files && files.length > 0) {
+    if (files?.length > 0) {
       handleImageUpload(files);
-      e.dataTransfer.clearData(); // ✅ 기본 drag data 초기화
+      e.dataTransfer.clearData();
     }
   };
 
   const handleDragEnter = (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true); // ✅ 드래그 시작 시 강조
+    setIsDragging(true);
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy"; // ✅ 브라우저가 파일 열지 않도록
+    e.dataTransfer.dropEffect = "copy";
     setIsDragging(true);
   };
 
   const handleDragLeave = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsDragging(false);
   };
 
-  // ✅ 이미지 선택 / 해제
+  // ✅ 이미지 선택
   const handleSelectImage = (img) => {
     setSelectedImage(img);
     setSelectedImages((prev) =>
-      prev.includes(img) ? prev.filter((i) => i !== img) : [...prev, img]
+      prev.includes(img)
+        ? prev.filter((i) => i !== img)
+        : [...prev, img]
     );
   };
 
@@ -73,17 +80,40 @@ const ImageUpload = ({
   const handleDeselectAll = () => setSelectedImages([]);
   const handleDeleteAll = () => {
     if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
+      images.forEach((img) => URL.revokeObjectURL(img.thumbnail)); // ✅ 메모리 정리
       setImages([]);
       setSelectedImages([]);
       setSelectedImage(null);
     }
   };
 
+  // ✅ 개별 삭제
+  const handleDeleteSingle = (img, index) => {
+    URL.revokeObjectURL(img.thumbnail); // ✅ 썸네일 URL 정리
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setSelectedImages((prev) => prev.filter((i) => i !== img));
+    if (selectedImage === img) {
+      const remaining = images.filter((_, i) => i !== index);
+      setSelectedImage(remaining[0] || null);
+    }
+  };
+
+  // ✅ images 변경 시 자동 정리
+  useEffect(() => {
+    // 선택된 이미지가 실제 배열에 없으면 초기화
+    if (selectedImage && !images.includes(selectedImage)) {
+      setSelectedImage(null);
+    }
+    if (selectedImages?.length) {
+      setSelectedImages((prev) => prev.filter((img) => images.includes(img)));
+    }
+  }, [images]);
+
   return (
     <div
       className={`upload-section ${isDragging ? "dragging" : ""}`}
-      onDragEnter={handleDragEnter} // ✅ 추가됨
       onDrop={handleDrop}
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
@@ -115,10 +145,10 @@ const ImageUpload = ({
       {/* ✅ 썸네일 */}
       <div className="thumbnail-grid">
         {images.map((img, i) => (
-          <div key={i} className="thumb-wrapper">
+          <div key={img.id || i} className="thumb-wrapper">
             <img
               src={img.thumbnail}
-              alt="thumbnail"
+              alt={`thumbnail-${i}`}
               className={`thumb ${selectedImages.includes(img) ? "selected" : ""}`}
               onClick={() => handleSelectImage(img)}
             />
@@ -126,8 +156,7 @@ const ImageUpload = ({
               className="delete-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                setImages(images.filter((_, idx) => idx !== i));
-                setSelectedImages(selectedImages.filter((x) => x !== img));
+                handleDeleteSingle(img, i);
               }}
             >
               ✕
