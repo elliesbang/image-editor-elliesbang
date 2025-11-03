@@ -105,4 +105,99 @@ export const onRequestPost = async ({ request, env }) => {
 
       const res = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
-        headers
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errt = await res.text();
+        throw new Error(`OpenAI 분석 실패 (${res.status}): ${errt}`);
+      }
+
+      const data = await res.json();
+
+      // ✅ 안전 파싱 (Responses 포맷 호환)
+      const rawText =
+        data?.output?.[0]?.content?.[0]?.text ??
+        data?.outputs?.[0]?.content?.[0]?.text ??
+        data?.response?.output_text ??
+        "";
+
+      let parsed = null;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (e) {
+        // 스키마가 강제되므로 거의 오지 않지만, 대비
+        parsed = { title: "분석 결과", keywords: [] };
+      }
+
+      // 정규화
+      const normKeywords = (parsed.keywords || [])
+        .map((k) => k.trim())
+        .filter(Boolean);
+
+      perImage.push({
+        index: i,
+        title: parsed.title?.trim() || "분석 결과",
+        keywords: normKeywords,
+      });
+    }
+
+    // ✅ 공통 / 개별 키워드 계산 (대소문자 무시)
+    const toKey = (s) => s.toLowerCase();
+    let common = [];
+    if (perImage.length === 1) {
+      common = perImage[0].keywords;
+    } else {
+      // 교집합
+      const sets = perImage.map((p) => new Set(p.keywords.map(toKey)));
+      const first = sets[0];
+      common = [...first].filter((kw) => sets.every((s) => s.has(kw)));
+
+      // 다시 원문 보존 형태로 매핑
+      const anyOriginal = (kwLower) => {
+        for (const p of perImage) {
+          const hit = p.keywords.find((k) => toKey(k) === kwLower);
+          if (hit) return hit;
+        }
+        return kwLower;
+      };
+      common = common.map(anyOriginal);
+    }
+
+    // 개별 유니크
+    const perImageWithUnique = perImage.map((p) => {
+      const others = perImage
+        .filter((x) => x !== p)
+        .flatMap((x) => x.keywords.map(toKey));
+      const otherSet = new Set(others);
+      const unique = p.keywords.filter((k) => !otherSet.has(toKey(k)));
+      return { ...p, uniqueKeywords: unique };
+    });
+
+    // ✅ 대표 제목 (공통 키워드 기준 2~3개 조합)
+    const repTitle =
+      (common[0] && common[1] && `${common[0]} · ${common[1]}`) ||
+      perImageWithUnique[0]?.title ||
+      "이미지 키워드 분석";
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        title: repTitle,
+        commonKeywords: common,
+        perImage: perImageWithUnique, // [{index, title, keywords[25], uniqueKeywords[]}]
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("🚨 analyze 오류:", err);
+    return new Response(
+      JSON.stringify({ success: false, error: err.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+};
