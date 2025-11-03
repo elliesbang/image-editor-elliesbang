@@ -1,53 +1,68 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const formData = await request.formData();
-    const imageFile = formData.get("file");
+    const { imageBase64 } = await request.json();
 
-    if (!imageFile) {
+    if (!imageBase64) {
       return new Response(
-        JSON.stringify({ error: "이미지 파일이 없습니다." }),
+        JSON.stringify({ error: "이미지 데이터가 없습니다." }),
         { status: 400 }
       );
     }
 
-    const apiKey = env.HF_API_KEY;
-    const model = "briaai/RMBG-1.4";
+    const apiKey = env.OPENAI_API_KEY;
+    if (!apiKey)
+      throw new Error("OPENAI_API_KEY 환경 변수가 누락되었습니다.");
 
-    // ✅ 1️⃣ Hugging Face로 배경제거
-    const removeRes = await fetch(
-      `https://router.huggingface.co/hf-inference/models/${model}`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}` },
-        body: imageFile,
-      }
-    );
+    // ✅ 1단계: OpenAI 배경제거 API 호출
+    const bgRemovedRes = await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: (() => {
+        const formData = new FormData();
+        const buffer = Buffer.from(imageBase64, "base64");
+        const blob = new Blob([buffer], { type: "image/png" });
 
-    if (!removeRes.ok) {
-      throw new Error(`배경제거 실패 (${removeRes.status})`);
-    }
+        formData.append("image", blob, "input.png");
+        formData.append(
+          "prompt",
+          "Remove the background cleanly, preserving only the main subject in sharp detail."
+        );
+        formData.append("model", "gpt-image-1");
+        formData.append("size", "1024x1024");
+        return formData;
+      })(),
+    });
 
-    // ✅ 결과 버퍼 생성
-    const arrayBuffer = await removeRes.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: "image/png" });
+    const bgData = await bgRemovedRes.json();
+    const removedBgBase64 = bgData.data?.[0]?.b64_json;
+    if (!removedBgBase64)
+      throw new Error("OpenAI에서 배경제거 이미지가 반환되지 않았습니다.");
 
-    // ✅ 2️⃣ Web Canvas로 여백 제거 (투명 픽셀 기준)
+    // ✅ 2단계: 피사체 중심 크롭 (서버 측 Canvas)
+    const buffer = Buffer.from(removedBgBase64, "base64");
+    const blob = new Blob([buffer], { type: "image/png" });
     const imageBitmap = await createImageBitmap(blob);
+
     const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(imageBitmap, 0, 0);
 
-    // ✅ 이미지 데이터 읽기
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const { data, width, height } = ctx.getImageData(
+      0,
+      0,
+      imageBitmap.width,
+      imageBitmap.height
+    );
 
-    // ✅ 투명 영역 제외한 최소 bounding box 계산
-    let minX = canvas.width,
-      minY = canvas.height,
+    let minX = width,
+      minY = height,
       maxX = 0,
       maxY = 0;
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
-        const alpha = imgData[(y * canvas.width + x) * 4 + 3];
+
+    // ✅ 피사체 알파값이 있는 영역만 탐색
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const alpha = data[(y * width + x) * 4 + 3];
         if (alpha > 10) {
           if (x < minX) minX = x;
           if (y < minY) minY = y;
@@ -57,34 +72,51 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
-    // ✅ 여백 없는 딱 맞는 크기로 크롭
-    const cropW = maxX - minX + 1;
-    const cropH = maxY - minY + 1;
-    const croppedCanvas = new OffscreenCanvas(cropW, cropH);
-    const croppedCtx = croppedCanvas.getContext("2d");
-    croppedCtx.drawImage(
+    if (minX >= maxX || minY >= maxY)
+      throw new Error("피사체를 찾지 못했습니다.");
+
+    // ✅ 여백 3% 추가 (너무 꽉 차지 않게)
+    const marginX = Math.round(width * 0.03);
+    const marginY = Math.round(height * 0.03);
+    minX = Math.max(0, minX - marginX);
+    minY = Math.max(0, minY - marginY);
+    maxX = Math.min(width, maxX + marginX);
+    maxY = Math.min(height, maxY + marginY);
+
+    const cropWidth = maxX - minX;
+    const cropHeight = maxY - minY;
+
+    // ✅ 크롭된 캔버스 생성
+    const cropCanvas = new OffscreenCanvas(cropWidth, cropHeight);
+    const cropCtx = cropCanvas.getContext("2d");
+    cropCtx.drawImage(
       canvas,
       minX,
       minY,
-      cropW,
-      cropH,
+      cropWidth,
+      cropHeight,
       0,
       0,
-      cropW,
-      cropH
+      cropWidth,
+      cropHeight
     );
 
-    // ✅ 3️⃣ base64 변환
-    const blobCropped = await croppedCanvas.convertToBlob({ type: "image/png" });
-    const base64 = Buffer.from(await blobCropped.arrayBuffer()).toString("base64");
+    // ✅ 결과 Base64 반환
+    const croppedBlob = await cropCanvas.convertToBlob({ type: "image/png" });
+    const arrayBuffer = await croppedBlob.arrayBuffer();
+    const croppedBase64 = Buffer.from(arrayBuffer).toString("base64");
 
-    return new Response(JSON.stringify({ result: base64 }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ image: `data:image/png;base64,${croppedBase64}` }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   } catch (err) {
     console.error("🚨 remove-bg-crop 오류:", err);
     return new Response(
-      JSON.stringify({ error: "배경제거+크롭 실패", detail: err.message }),
+      JSON.stringify({
+        error: "배경제거+크롭 실패",
+        detail: err.message,
+      }),
       { status: 500 }
     );
   }
