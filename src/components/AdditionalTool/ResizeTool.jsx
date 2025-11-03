@@ -9,7 +9,7 @@ export default function ResizeTool({
   selectedResultImage,
 }) {
   const [resizeW, setResizeW] = useState("");
-  const [keepAspect, setKeepAspect] = useState(true); // ✅ 비율 유지 옵션 추가
+  const [keepAspect, setKeepAspect] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const activeImage =
@@ -19,34 +19,49 @@ export default function ResizeTool({
     (Array.isArray(selectedImages) && selectedImages[0]);
   const hasActiveImage = Boolean(activeImage);
 
-  // ✅ 공통 이미지 처리 함수
-  const processImage = async (endpoint, extra = {}) => {
+  const handleResize = async () => {
+    if (!resizeW) return alert("가로(px)를 입력하세요!");
     const currentImage = getCurrentImage(activeImage);
     if (!currentImage) return alert("이미지를 먼저 선택하세요!");
+
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      if (currentImage instanceof File) {
-        formData.append("image", currentImage);
-      } else if (typeof currentImage === "string") {
-        const clean = currentImage.replace(/^data:image\/(png|jpeg);base64,/, "");
-        const blob = await fetch(`data:image/png;base64,${clean}`).then((r) => r.blob());
-        formData.append("image", blob, "image.png");
-      }
+      // ✅ 이미지 객체 로드
+      const img = new Image();
+      img.src =
+        typeof currentImage === "string"
+          ? currentImage
+          : URL.createObjectURL(currentImage);
 
-      // ✅ 옵션 추가
-      Object.entries(extra).forEach(([k, v]) => formData.append(k, v));
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = rej;
+      });
 
-      const res = await fetch(`/api/${endpoint}`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (!data.result) throw new Error("리사이즈 실패");
+      // ✅ 비율 계산
+      const aspect = img.width / img.height;
+      const newW = parseInt(resizeW);
+      const newH = keepAspect ? Math.round(newW / aspect) : img.height;
 
-      // ✅ 리사이즈 결과 이미지 표시
-      const blob = await fetch(`data:image/png;base64,${data.result}`).then((r) => r.blob());
+      // ✅ Canvas로 리사이즈
+      const canvas = document.createElement("canvas");
+      canvas.width = newW;
+      canvas.height = newH;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, newW, newH);
+
+      // ✅ 결과를 base64로 변환
+      const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+      const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob();
       const file = new File([blob], "resized.png", { type: "image/png" });
 
-      window.dispatchEvent(new CustomEvent("imageProcessed", { detail: { file, thumbnail: data.result } }));
+      // ✅ 결과 전파 (ProcessResult 섹션으로 전달)
+      window.dispatchEvent(
+        new CustomEvent("imageProcessed", {
+          detail: { file, thumbnail: base64 },
+        })
+      );
 
       alert("리사이즈 완료!");
     } catch (err) {
@@ -55,15 +70,6 @@ export default function ResizeTool({
     } finally {
       setLoading(false);
     }
-  };
-
-  // ✅ 리사이즈 실행
-  const handleResize = async () => {
-    if (!resizeW) return alert("가로(px)를 입력하세요!");
-    await processImage("resize", {
-      width: resizeW,
-      keepAspect: keepAspect ? "true" : "false", // ✅ 비율 유지 여부 전달
-    });
   };
 
   return (
@@ -77,7 +83,6 @@ export default function ResizeTool({
         onChange={(e) => setResizeW(e.target.value)}
       />
 
-      {/* ✅ 비율 유지 옵션 */}
       <label className="checkbox-label" style={{ marginLeft: "10px" }}>
         <input
           type="checkbox"
