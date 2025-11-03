@@ -5,7 +5,6 @@ export const onRequestPost = async ({ request, env }) => {
 
     const body = await request.json();
     const imageBase64List = body.imageBase64List || [];
-
     if (!imageBase64List.length) {
       return new Response(
         JSON.stringify({ success: false, error: "분석할 이미지가 없습니다." }),
@@ -23,7 +22,7 @@ export const onRequestPost = async ({ request, env }) => {
             role: "system",
             content: [
               {
-                type: "input_text",
+                type: "text",
                 text:
                   "당신은 디자인 마켓(Miricanvas, 위버딩 등)에 최적화된 SEO 키워드를 생성하는 전문가입니다. " +
                   "이미지를 보고 25개의 고유한 키워드와 짧은 제목을 만들어주세요. " +
@@ -35,17 +34,12 @@ export const onRequestPost = async ({ request, env }) => {
           {
             role: "user",
             content: [
-              { type: "input_text", text: "이미지를 분석하고 JSON으로 반환하세요." },
-              { type: "input_image", image_url: `data:image/png;base64,${img64}` },
+              { type: "text", text: "이미지를 분석하고 JSON으로 반환하세요." },
+              { type: "image_url", image_url: `data:image/png;base64,${img64}` },
             ],
           },
         ],
-
-        // ✅ 최신 사양으로 변경됨
-        response_spec: {
-          modality: "text",
-          text_format: "json",
-        },
+        response_format: { type: "json_object" }, // ✅ 최신 스펙
       };
 
       const res = await fetch("https://api.openai.com/v1/responses", {
@@ -58,8 +52,8 @@ export const onRequestPost = async ({ request, env }) => {
       });
 
       if (!res.ok) {
-        const errt = await res.text();
-        throw new Error(`OpenAI 분석 실패 (${res.status}): ${errt}`);
+        const errText = await res.text();
+        throw new Error(`OpenAI 분석 실패 (${res.status}): ${errText}`);
       }
 
       const data = await res.json();
@@ -84,7 +78,10 @@ export const onRequestPost = async ({ request, env }) => {
 
     // ✅ 공통 키워드 계산
     const sets = perImageResults.map((p) => new Set(p.keywords));
-    const common = [...sets[0]].filter((k) => sets.every((s) => s.has(k)));
+    const common =
+      sets.length > 1
+        ? [...sets[0]].filter((k) => sets.every((s) => s.has(k)))
+        : [];
 
     return new Response(
       JSON.stringify({
