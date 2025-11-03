@@ -24,10 +24,12 @@ export const onRequestPost = async ({ request }) => {
       maxX = 0,
       maxY = 0;
 
+    // ✅ alpha 기준 완화 (기존 10 → 20)
+    // 일부 반투명 경계도 피사체로 인식되게 함
     for (let y = 0; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {
         const alpha = imgData[(y * canvas.width + x) * 4 + 3];
-        if (alpha > 10) { // 투명하지 않은 픽셀 감지
+        if (alpha > 20) { // 투명하지 않은 픽셀 감지
           if (x < minX) minX = x;
           if (y < minY) minY = y;
           if (x > maxX) maxX = x;
@@ -36,9 +38,10 @@ export const onRequestPost = async ({ request }) => {
       }
     }
 
-    // ✅ 최소 여백(3~5%) 남기기
-    const paddingX = Math.floor((maxX - minX) * 0.03);
-    const paddingY = Math.floor((maxY - minY) * 0.03);
+    // ✅ 최소 여백(5%) 남기기 → 피사체 절대 잘리지 않게
+    const paddingRatio = 0.05;
+    const paddingX = Math.floor((maxX - minX) * paddingRatio);
+    const paddingY = Math.floor((maxY - minY) * paddingRatio);
     minX = Math.max(0, minX - paddingX);
     minY = Math.max(0, minY - paddingY);
     maxX = Math.min(canvas.width, maxX + paddingX);
@@ -53,7 +56,8 @@ export const onRequestPost = async ({ request }) => {
 
     // ✅ Base64로 반환
     const croppedBlob = await croppedCanvas.convertToBlob({ type: "image/png" });
-    const base64 = Buffer.from(await croppedBlob.arrayBuffer()).toString("base64");
+    const arrayBuffer = await croppedBlob.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
 
     return new Response(JSON.stringify({ result: base64 }), {
       headers: { "Content-Type": "application/json" },
