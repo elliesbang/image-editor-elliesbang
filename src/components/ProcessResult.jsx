@@ -135,7 +135,7 @@ export default function ProcessResult({ results, setSelectedResult }) {
                   handleDownload(img, idx);
                 }}
               >
-                저장
+                💾
               </button>
             </div>
           ))
