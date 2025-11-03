@@ -22,9 +22,7 @@ export default function ImageEditor({ selectedImage }) {
 
     // 문자열(base64 혹은 URL)로 전달된 경우
     if (typeof selectedImage === "string") {
-      // base64가 이미 prefix를 포함하는 경우
       if (selectedImage.startsWith("data:image")) return selectedImage;
-      // prefix 없는 순수 base64 문자열
       return `data:image/png;base64,${selectedImage}`;
     }
 
@@ -46,7 +44,6 @@ export default function ImageEditor({ selectedImage }) {
       const data = await res.json();
       if (!data.result) throw new Error("배경제거 실패");
 
-      // ✅ 결과 바로 크롭으로 전달
       await cropLocally(data.result);
     } catch (err) {
       console.error("배경제거 오류:", err);
@@ -171,21 +168,21 @@ export default function ImageEditor({ selectedImage }) {
   return (
     <div className="editor-section">
       <div className="button-grid">
-        <button className="btn" disabled={!imgSrc} onClick={removeBackgroundOnly}>
+        <button className="btn" disabled={!selectedImage} onClick={removeBackgroundOnly}>
           배경제거
         </button>
-        <button className="btn" disabled={!imgSrc} onClick={removeBackground}>
+        <button className="btn" disabled={!selectedImage} onClick={removeBackground}>
           배경제거 + 크롭
         </button>
-        <button className="btn" disabled={!imgSrc} onClick={() => cropLocally()}>
+        <button className="btn" disabled={!selectedImage} onClick={() => cropLocally()}>
           크롭만
         </button>
-        <button className="btn" disabled={!imgSrc} onClick={denoiseLocally}>
+        <button className="btn" disabled={!selectedImage} onClick={denoiseLocally}>
           노이즈 제거
         </button>
       </div>
 
-      {!imgSrc && (
+      {!selectedImage && (
         <p
           style={{
             color: "#999",
