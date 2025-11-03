@@ -1,9 +1,7 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
     const { imageBase64 } = await request.json();
-    if (!imageBase64) {
-      throw new Error("이미지 데이터가 없습니다.");
-    }
+    if (!imageBase64) throw new Error("이미지 데이터가 없습니다.");
 
     const apiKey = env.OPENAI_API_KEY;
 
@@ -23,20 +21,26 @@ export const onRequestPost = async ({ request, env }) => {
               {
                 type: "input_text",
                 text: `
-                당신은 이미지 분석 전문가입니다.
-                아래 이미지를 보고 다음을 수행하세요:
+당신은 미리캔버스(Miricanvas) 템플릿 및 디자인 요소 등록용 SEO 전문가입니다.
+이미지를 분석하여 **미리캔버스 승인 및 검색 노출에 최적화된 결과**를 만들어주세요.
 
-                1️⃣ 이미지의 주요 객체, 색상, 질감, 분위기를 포함한
-                    **25개의 키워드**를 쉼표로 구분해 나열하세요.
-                2️⃣ 위 키워드 중 핵심적인 2~3개를 조합해 간결한 제목을 생성하세요.
-                3️⃣ 이미지의 전체적인 분위기나 상황을 한 문장으로 요약 설명하세요.
+📌 지침:
+1️⃣ 한국어로 작성할 것  
+2️⃣ 아래 세 가지를 JSON 형식으로 출력할 것  
 
-                응답 형식은 반드시 JSON 형태로 반환하세요:
-                {
-                  "title": "제목",
-                  "keywords": ["키워드1", "키워드2", ...],
-                  "description": "짧은 설명"
-                }
+- title: 미리캔버스 SEO에 적합한 짧은 제목 (핵심 키워드 2~3개 조합)
+- keywords: 미리캔버스 검색에 잘 노출되는 키워드 25개 (2~3단어 형태, 쉼표 구분)
+- description: 이미지 분위기 및 활용처를 설명하는 짧은 문장 (포스터, 카드뉴스 등 활용 가능성 포함)
+
+출력 예시 👇
+{
+  "title": "봄 감성 수채화 배경 일러스트",
+  "keywords": [
+    "봄 배경", "수채화 일러스트", "벚꽃 디자인", "감성 배경",
+    "핑크 파스텔톤", "플로럴 패턴", "자연 일러스트", ...
+  ],
+  "description": "감성적인 봄날의 수채화 배경으로 포스터나 카드뉴스에 잘 어울립니다."
+}
                 `,
               },
               {
@@ -46,40 +50,64 @@ export const onRequestPost = async ({ request, env }) => {
             ],
           },
         ],
-        max_output_tokens: 800,
+        max_output_tokens: 1000,
       }),
     });
 
     const data = await res.json();
 
-    // ✅ 안전하게 텍스트 파싱
-    const rawText =
+    // ✅ GPT 응답 텍스트 안전하게 추출
+    let rawText =
       data?.output?.[0]?.content?.[0]?.text ||
       data?.outputs?.[0]?.content?.[0]?.text ||
       "";
 
-    console.log("🧠 GPT-4o 응답 원본:", rawText);
+    console.log("🧠 GPT-4o 원본 응답:", rawText);
+
+    // ✅ 코드블록(````json`) 제거
+    rawText = rawText.replace(/```json|```/g, "").trim();
 
     // ✅ JSON 파싱
     let result = {};
     try {
       result = JSON.parse(rawText);
     } catch {
-      // JSON 파싱 실패 시 대체 처리
-      const allWords = rawText
-        .split(/,|\n| /)
-        .map((w) => w.trim())
-        .filter((w) => w.length > 1);
-      const keywords = Array.from(new Set(allWords)).slice(0, 25);
-      const title = keywords.slice(0, 3).join(" · ") || "이미지 분석 결과";
-      const description = rawText.slice(0, 200);
-      result = { title, keywords, description };
+      console.warn("⚠️ JSON 파싱 실패, 수동 처리 시도");
+      const matchKeywords = rawText.match(/"keywords"\s*:\s*$begin:math:display$([^$end:math:display$]+)\]/);
+      const matchTitle = rawText.match(/"title"\s*:\s*"([^"]+)"/);
+      const matchDesc = rawText.match(/"description"\s*:\s*"([^"]+)"/);
+
+      result = {
+        title: matchTitle ? matchTitle[1] : "디자인 요소",
+        keywords: matchKeywords
+          ? matchKeywords[1]
+              .split(",")
+              .map((k) => k.replace(/"|'/g, "").trim())
+              .filter((k) => k.length > 1)
+              .slice(0, 25)
+          : [],
+        description: matchDesc
+          ? matchDesc[1]
+          : "미리캔버스용 디자인 요소입니다.",
+      };
     }
 
-    // ✅ 결과 반환
-    return new Response(JSON.stringify({ success: true, ...result }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    // ✅ 데이터 정리
+    const cleanKeywords = Array.from(new Set(result.keywords)).slice(0, 25);
+    const cleanTitle = result.title?.replace(/[^가-힣a-zA-Z0-9·\s]/g, "").trim();
+    const cleanDesc = result.description?.trim();
+
+    // ✅ 최종 응답
+    return new Response(
+      JSON.stringify({
+        success: true,
+        title: cleanTitle,
+        keywords: cleanKeywords,
+        description: cleanDesc,
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+
   } catch (err) {
     console.error("🚨 analyze 오류:", err);
     return new Response(
