@@ -12,30 +12,30 @@ export default function AdditionalEditor({
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const syncedSelectedImage =
-    Array.isArray(selectedImages) && selectedImages.includes(selectedImage)
-      ? selectedImages[selectedImages.indexOf(selectedImage)]
-      : selectedImage;
+  // ✅ 우선순위: result → upload → selected
+  const activeImage =
+    selectedResultImage || selectedUploadImage || selectedImage ||
+    (Array.isArray(selectedImages) && selectedImages.length > 0
+      ? selectedImages[0]
+      : null);
 
-  const hasActiveImage = Boolean(
-    selectedUploadImage || selectedResultImage || syncedSelectedImage
-  );
+  const hasActiveImage = Boolean(activeImage);
 
   // ✅ 이미지 안정적으로 가져오기 (객체, File, base64 모두 인식)
   const getCurrentImage = () => {
-    if (!syncedSelectedImage) return null;
+    if (!activeImage) return null;
 
-    if (syncedSelectedImage instanceof File) return syncedSelectedImage;
+    if (activeImage instanceof File) return activeImage;
 
-    if (typeof syncedSelectedImage === "object") {
-      if (syncedSelectedImage.file instanceof File) return syncedSelectedImage.file;
-      if (syncedSelectedImage.thumbnail)
-        return `data:image/png;base64,${syncedSelectedImage.thumbnail}`;
+    if (typeof activeImage === "object") {
+      if (activeImage.file instanceof File) return activeImage.file;
+      if (activeImage.thumbnail)
+        return `data:image/png;base64,${activeImage.thumbnail}`;
     }
 
-    if (typeof syncedSelectedImage === "string") {
-      if (syncedSelectedImage.startsWith("data:image")) return syncedSelectedImage;
-      return `data:image/png;base64,${syncedSelectedImage}`;
+    if (typeof activeImage === "string") {
+      if (activeImage.startsWith("data:image")) return activeImage;
+      return `data:image/png;base64,${activeImage}`;
     }
 
     return null;
@@ -92,9 +92,7 @@ export default function AdditionalEditor({
         })
       );
 
-      if (setSelectedImages) {
-        setSelectedImages((prev) => prev);
-      }
+      if (setSelectedImages) setSelectedImages((prev) => prev);
 
       alert(`${endpoint} 완료!`);
     } catch (err) {
@@ -148,14 +146,12 @@ export default function AdditionalEditor({
     }
   };
 
-  // ✅ 키워드 복사
   const copyKeywords = () => {
     if (!keywords.length) return;
     navigator.clipboard.writeText(keywords.join(", "));
     alert("키워드가 복사되었습니다 ✅");
   };
 
-  // ✅ UI 시작
   return (
     <div className="tools-wrap">
       <h3>✨ 추가 기능</h3>
@@ -178,12 +174,7 @@ export default function AdditionalEditor({
       {/* 🔹 SVG 변환 */}
       <div className="tool-block">
         <label>SVG 변환</label>
-        <select
-          className="input"
-          defaultValue="1"
-          id="svgColorSelect"
-          style={{ marginBottom: "8px" }}
-        >
+        <select className="input" defaultValue="1" id="svgColorSelect" style={{ marginBottom: "8px" }}>
           <option value="1">단색 (1-color)</option>
           <option value="2">2색 (2-color)</option>
           <option value="3">3색 (3-color)</option>
