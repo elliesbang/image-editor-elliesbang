@@ -1,59 +1,46 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    // ✅ 1. 이미지 파일 받기
     const formData = await request.formData();
-    const imageFile = formData.get("image");
+    const imageFile = formData.get("file");
 
     if (!imageFile) {
       return new Response(
-        JSON.stringify({ error: "이미지가 없습니다." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "이미지 파일이 없습니다." }),
+        { status: 400 }
       );
     }
 
-    // ✅ 2. 파일 → 바이트 배열 변환
-    const buffer = await imageFile.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
+    const apiKey = env.HF_API_KEY;
+    const model = "briaai/RMBG-1.4"; // ✅ 배경제거 모델 이름
 
-    // ✅ 3. 허깅페이스 최신 엔드포인트로 배경제거 요청 (RMBG-1.4)
-    const huggingfaceKey = env.HUGGINGFACE_API_KEY;
-    if (!huggingfaceKey) {
-      throw new Error("HUGGINGFACE_API_KEY 누락");
-    }
-
-    const bgRes = await fetch(
-      "https://api-inference.huggingface.co/models/briaai/RMBG-1.4?wait_for_model=true",
+    // ✅ 새로운 Hugging Face 엔드포인트 사용
+    const response = await fetch(
+      `https://router.huggingface.co/hf-inference/models/${model}`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${huggingfaceKey}`,
-          "Content-Type": "application/octet-stream",
-          Accept: "image/png",
+          Authorization: `Bearer ${apiKey}`,
         },
-        body: bytes,
+        body: imageFile,
       }
     );
 
-    if (!bgRes.ok) {
-      const errText = await bgRes.text();
-      throw new Error(`배경제거 실패 (${bgRes.status}) - ${errText}`);
+    if (!response.ok) {
+      throw new Error(`배경제거 실패 (${response.status})`);
     }
 
-    // ✅ 4. 결과 처리
-    const bgBuffer = await bgRes.arrayBuffer();
-    const base64 = btoa(
-      String.fromCharCode(...new Uint8Array(bgBuffer))
-    );
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
 
-    return new Response(
-      JSON.stringify({ success: true, result: base64 }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ result: base64 }), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("🚨 remove-bg 오류:", err);
     return new Response(
-      JSON.stringify({ success: false, error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: "배경제거 실패", detail: err.message }),
+      { status: 500 }
     );
   }
 };
