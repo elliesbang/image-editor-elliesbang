@@ -6,21 +6,25 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   const [selectedResults, setSelectedResults] = useState([]);
   const [localResults, setLocalResults] = useState(results);
 
-  // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈)
+  // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
   useEffect(() => {
     const handleProcessed = (e) => {
-      const { file, thumbnail, result } = e.detail;
+      const { file, thumbnail, result } = e.detail || {};
       const base64Data = result || thumbnail;
 
-      if (base64Data) {
-        setLocalResults((prev) => [...prev, base64Data]);
-      } else if (file) {
+      // ✅ 파일 객체 → Base64 변환
+      if (file) {
         const reader = new FileReader();
         reader.onload = () => {
-          const base64 = reader.result.split(",")[1];
-          setLocalResults((prev) => [...prev, base64]);
+          const cleanBase64 = reader.result.replace(/^data:image\/\w+;base64,/, "");
+          setLocalResults((prev) => [...prev, cleanBase64]);
         };
         reader.readAsDataURL(file);
+      }
+      // ✅ Base64 문자열인 경우
+      else if (base64Data) {
+        const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+        setLocalResults((prev) => [...prev, cleanBase64]);
       }
     };
 
@@ -28,23 +32,21 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
     return () => window.removeEventListener("imageProcessed", handleProcessed);
   }, []);
 
-  // ✅ App에서 전달된 results 동기화
+  // ✅ 외부 results 변경 시 동기화
   useEffect(() => setLocalResults(results), [results]);
 
-  const getImageSrc = (img) => {
-    if (img.startsWith("data:image")) return img;
-    return `data:image/png;base64,${img}`;
-  };
+  const getImageSrc = (img) =>
+    img.startsWith("data:image") ? img : `data:image/png;base64,${img}`;
 
   // ✅ 이미지 선택 / 해제
   const toggleSelect = (img) => {
     let newSelection;
     if (selectedResults.includes(img)) {
       newSelection = [];
-      if (setSelectedResult) setSelectedResult(null);
+      setSelectedResult?.(null);
     } else {
       newSelection = [img];
-      if (setSelectedResult) setSelectedResult(getImageSrc(img));
+      setSelectedResult?.(getImageSrc(img));
     }
     setSelectedResults(newSelection);
   };
@@ -52,21 +54,21 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   // ✅ 전체 선택 / 해제 / 삭제
   const handleSelectAll = () => {
     setSelectedResults([...localResults]);
-    if (setSelectedResult && localResults.length > 0) {
-      setSelectedResult(getImageSrc(localResults[0]));
+    if (localResults.length > 0) {
+      setSelectedResult?.(getImageSrc(localResults[0]));
     }
   };
 
   const handleDeselectAll = () => {
     setSelectedResults([]);
-    if (setSelectedResult) setSelectedResult(null);
+    setSelectedResult?.(null);
   };
 
   const handleDeleteAll = () => {
     if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
       setLocalResults([]);
       setSelectedResults([]);
-      if (setSelectedResult) setSelectedResult(null);
+      setSelectedResult?.(null);
     }
   };
 
@@ -100,7 +102,6 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
 
   return (
     <div className="result-section">
-      {/* ✅ 제어 버튼 */}
       {localResults.length > 0 && (
         <div className="control-buttons">
           <button onClick={handleSelectAll}>전체 선택</button>
@@ -109,7 +110,6 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
         </div>
       )}
 
-      {/* ✅ 결과 썸네일 */}
       <div className="thumbnail-grid">
         {localResults.length === 0 ? (
           <p className="empty">아직 처리된 이미지가 없습니다.</p>
