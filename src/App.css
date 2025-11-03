@@ -61,10 +61,11 @@
 .header-button {
   background: #ffd331;
   border: none;
-  padding: 6px 12px;
+  padding: 6px 16px; /* ✅ 폭 늘림 */
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.9rem;
+  white-space: nowrap; /* ✅ 글씨 줄바꿈 방지 */
   cursor: pointer;
 }
 .header-button:hover {
@@ -158,6 +159,39 @@ button:hover, .btn:hover {
   resize: none;
 }
 
+/* ✅ SVG 변환 - 색상 옵션 */
+.svg-color-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e8e2c7;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #333;
+}
+
+/* ✅ GIF 변환 - 설명 텍스트 */
+.gif-desc {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e8e2c7;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fffef8;
+  resize: none;
+}
+
+/* ✅ 키워드 분석 결과 박스 */
+.keyword-output {
+  background: #fffef0;
+  border: 1px solid #ffe69a;
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 80px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
 /* 🌼 처리 결과 */
 #result-section {
   display: none;
@@ -177,6 +211,48 @@ button:hover, .btn:hover {
   font-size: 0.9rem;
 }
 
+/* 🌼 모달 공통 수정 (위치 중앙 고정) */
+.modal-backdrop,
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+/* ✅ 모달 내용 중앙 정렬 */
+.modal-card,
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px 20px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.2s ease;
+  position: relative;
+  top: auto !important;
+  bottom: auto !important;
+}
+
+/* ✅ 모달 닫기 버튼 */
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #777;
+}
+.modal-close:hover {
+  color: #000;
+}
+
 /* 🌼 푸터 */
 footer {
   width: 100%;
@@ -186,6 +262,7 @@ footer {
   text-align: center;
   font-size: 0.8rem;
   color: #555;
+  position: relative; /* ✅ 하단 고정 해제 */
 }
 footer a {
   color: #555;
@@ -222,7 +299,7 @@ footer a:hover {
 
   .header-button {
     font-size: 1rem;
-    padding: 8px 16px;
+    padding: 8px 20px;
   }
 
   footer {
