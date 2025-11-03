@@ -89,6 +89,19 @@ button:hover, .btn:hover {
   background: #ffcc00;
 }
 
+.control-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.control-buttons button {
+  flex: 1;
+  width: auto;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
 /* 🌼 이미지 썸네일 */
 .thumbnail-grid {
   display: grid;
