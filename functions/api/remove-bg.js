@@ -16,13 +16,19 @@ export const onRequestPost = async ({ request, env }) => {
     const bytes = new Uint8Array(buffer);
 
     // ✅ 3. 허깅페이스 최신 엔드포인트로 배경제거 요청 (RMBG-1.4)
+    const huggingfaceKey = env.HUGGINGFACE_API_KEY;
+    if (!huggingfaceKey) {
+      throw new Error("HUGGINGFACE_API_KEY 누락");
+    }
+
     const bgRes = await fetch(
-      "https://router.huggingface.co/hf-inference/models/briaai/RMBG-1.4",
+      "https://api-inference.huggingface.co/models/briaai/RMBG-1.4?wait_for_model=true",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${env.HUGGINGFACE_API_KEY}`,
+          Authorization: `Bearer ${huggingfaceKey}`,
           "Content-Type": "application/octet-stream",
+          Accept: "image/png",
         },
         body: bytes,
       }

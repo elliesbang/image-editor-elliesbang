@@ -1,66 +1,137 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-export default function ProcessResult({ results, setSelectedResult }) {
-  const initialResults = Array.isArray(results) ? results : [];
+const ensureDataUrl = (value) => {
+  if (!value) return "";
+  return value.startsWith("data:image") ? value : `data:image/png;base64,${value}`;
+};
+
+const stripDataUrlPrefix = (value = "") =>
+  value.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
+
+const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+const loadDimensions = (src) =>
+  new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.onerror = () => resolve({});
+    image.src = src;
+  });
+
+const normalizeResultItem = (item) => {
+  if (!item) return null;
+
+  if (typeof item === "string") {
+    return { id: generateId(), src: ensureDataUrl(item), meta: {} };
+  }
+
+  if (typeof item === "object") {
+    const srcCandidate =
+      item.src || item.base64 || item.thumbnail || item.result || "";
+    if (!srcCandidate) return null;
+    return {
+      id: item.id || generateId(),
+      src: ensureDataUrl(srcCandidate),
+      meta: item.meta || {},
+    };
+  }
+
+  return null;
+};
+
+export default function ProcessResult({ images, results, setSelectedResult }) {
+  const getInitialResults = () => {
+    const source = Array.isArray(results)
+      ? results
+      : Array.isArray(images)
+      ? images
+      : [];
+    return source.map((item) => normalizeResultItem(item)).filter(Boolean);
+  };
+
   const [selectedResults, setSelectedResults] = useState([]);
-  const [localResults, setLocalResults] = useState(initialResults);
+  const [localResults, setLocalResults] = useState(getInitialResults);
+
+  const addResult = useCallback(
+    async (src, meta = {}) => {
+      if (!src) return;
+      const normalizedSrc = ensureDataUrl(src);
+      const needsDimensions = !meta.width || !meta.height;
+      const dimensions = needsDimensions
+        ? await loadDimensions(normalizedSrc)
+        : {};
+
+      setLocalResults((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          src: normalizedSrc,
+          meta: { ...dimensions, ...meta },
+        },
+      ]);
+    },
+    [setLocalResults]
+  );
 
   // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
   useEffect(() => {
     const handleProcessed = (e) => {
-      const { file, thumbnail, result } = e.detail || {};
+      const { file, thumbnail, result, meta } = e.detail || {};
       const base64Data = result || thumbnail;
 
-      // ✅ 파일 객체 → Base64 변환
       if (file) {
         const reader = new FileReader();
         reader.onload = () => {
-          const cleanBase64 = reader.result.replace(/^data:image\/\w+;base64,/, "");
-          setLocalResults((prev) => [...prev, cleanBase64]);
+          addResult(reader.result, meta);
         };
         reader.readAsDataURL(file);
-      }
-      // ✅ Base64 문자열인 경우
-      else if (base64Data) {
-        const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
-        setLocalResults((prev) => [...prev, cleanBase64]);
+      } else if (base64Data) {
+        addResult(base64Data, meta);
       }
     };
 
     window.addEventListener("imageProcessed", handleProcessed);
     return () => window.removeEventListener("imageProcessed", handleProcessed);
-  }, []);
+  }, [addResult]);
 
-  // ✅ 외부 results 변경 시 동기화
+  // ✅ 외부 results 변경 시 동기화 (초기 전달 및 별도 결과 배열 사용 시)
   useEffect(() => {
     if (Array.isArray(results)) {
-      setLocalResults(results);
+      setLocalResults(
+        results.map((item) => normalizeResultItem(item)).filter(Boolean)
+      );
+    } else if (!Array.isArray(results) && Array.isArray(images)) {
+      setLocalResults((prev) =>
+        prev.length > 0
+          ? prev
+          : images.map((item) => normalizeResultItem(item)).filter(Boolean)
+      );
     }
-  }, [results]);
-
-  const getImageSrc = (img) =>
-    img.startsWith("data:image") ? img : `data:image/png;base64,${img}`;
+  }, [results, images]);
 
   // ✅ 이미지 선택 / 해제
-  const toggleSelect = (img) => {
-    let newSelection;
-    if (selectedResults.includes(img)) {
-      newSelection = [];
+  const toggleSelect = (entry) => {
+    if (!entry) return;
+
+    if (selectedResults.includes(entry.id)) {
+      setSelectedResults([]);
       setSelectedResult?.(null);
     } else {
-      newSelection = [img];
-      setSelectedResult?.(getImageSrc(img));
+      setSelectedResults([entry.id]);
+      setSelectedResult?.(entry.src);
     }
-    setSelectedResults(newSelection);
   };
 
   // ✅ 전체 선택 / 해제 / 삭제
   const handleSelectAll = () => {
-    setSelectedResults([...localResults]);
+    const ids = localResults.map((item) => item.id);
+    setSelectedResults(ids);
     if (localResults.length > 0) {
-      setSelectedResult?.(getImageSrc(localResults[0]));
+      setSelectedResult?.(localResults[0].src);
     }
   };
 
@@ -78,9 +149,10 @@ export default function ProcessResult({ results, setSelectedResult }) {
   };
 
   // ✅ 개별 다운로드
-  const handleDownload = (base64, index) => {
+  const handleDownload = (entry, index) => {
+    if (!entry) return;
     const link = document.createElement("a");
-    link.href = getImageSrc(base64);
+    link.href = entry.src;
     link.download = `result_${index + 1}.png`;
     link.click();
   };
@@ -90,14 +162,16 @@ export default function ProcessResult({ results, setSelectedResult }) {
     if (localResults.length === 0) return alert("저장할 이미지가 없습니다!");
     const zip = new JSZip();
 
-    localResults.forEach((base64, idx) => {
-      const cleanBase64 = base64.replace(/^data:image\/png;base64,/, "");
+    localResults.forEach((entry, idx) => {
+      const cleanBase64 = stripDataUrlPrefix(entry.src);
       const byteCharacters = atob(cleanBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "image/png" });
+      const blob = new Blob([new Uint8Array(byteNumbers)], {
+        type: "image/png",
+      });
       zip.file(`result_${idx + 1}.png`, blob);
     });
 
@@ -119,20 +193,26 @@ export default function ProcessResult({ results, setSelectedResult }) {
         {localResults.length === 0 ? (
           <p className="empty">아직 처리된 이미지가 없습니다.</p>
         ) : (
-          localResults.map((img, idx) => (
+          localResults.map((entry, idx) => (
             <div
-              key={idx}
+              key={entry.id}
               className={`thumb-wrapper ${
-                selectedResults.includes(img) ? "selected" : ""
+                selectedResults.includes(entry.id) ? "selected" : ""
               }`}
-              onClick={() => toggleSelect(img)}
+              onClick={() => toggleSelect(entry)}
             >
-              <img src={getImageSrc(img)} alt={`결과 ${idx + 1}`} className="thumb" />
+              <img src={entry.src} alt={`결과 ${idx + 1}`} className="thumb" />
+              {entry.meta?.width && entry.meta?.height && (
+                <div className="thumb-meta">
+                  {entry.meta.width}×{entry.meta.height}px
+                  {entry.meta?.label ? ` · ${entry.meta.label}` : ""}
+                </div>
+              )}
               <button
                 className="save-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDownload(img, idx);
+                  handleDownload(entry, idx);
                 }}
               >
                 💾

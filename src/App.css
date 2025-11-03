@@ -111,6 +111,7 @@ button:hover, .btn:hover {
 .thumb-wrapper {
   position: relative;
   width: 100%;
+  overflow: hidden;
 }
 .thumb {
   width: 100%;
@@ -145,6 +146,37 @@ button:hover, .btn:hover {
 }
 .thumb-wrapper:hover .delete-btn {
   opacity: 1;
+}
+
+.thumb-meta {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  pointer-events: none;
+}
+
+.save-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.save-btn:hover {
+  background: rgba(0, 0, 0, 0.75);
 }
 
 /* 🌼 추가 기능 */

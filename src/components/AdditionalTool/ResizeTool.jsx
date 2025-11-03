@@ -55,7 +55,11 @@ export default function ResizeTool({
       // ✅ 처리결과 섹션으로 전달
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
-          detail: { file, thumbnail: `data:image/png;base64,${base64}` }, // 👈 수정된 부분
+          detail: {
+            file,
+            thumbnail: `data:image/png;base64,${base64}`,
+            meta: { width: newW, height: newH, label: "리사이즈" },
+          },
         })
       );
 
