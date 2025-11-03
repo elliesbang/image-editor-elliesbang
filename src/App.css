@@ -102,6 +102,10 @@ button:hover, .btn:hover {
   white-space: nowrap;
 }
 
+.upload-section .control-buttons {
+  margin-bottom: 12px;
+}
+
 /* 🌼 이미지 썸네일 */
 .thumbnail-grid {
   display: grid;
@@ -164,7 +168,7 @@ button:hover, .btn:hover {
 .save-btn {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   border: none;
