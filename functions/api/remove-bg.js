@@ -12,13 +12,12 @@ export const onRequestPost = async ({ request, env }) => {
     }
 
     // ✅ 2. 파일 → 바이트 배열 변환
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
+    const buffer = await imageFile.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
 
-    // ✅ 3. 허깅페이스 새 엔드포인트 (Inference Providers 라우터)
-    // ❗ 모델 주소는 /hf-inference/models/{model} 형태로 접근해야 함
-    const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/Sanster/lama-cleaner",
+    // ✅ 3. 허깅페이스 최신 엔드포인트로 배경제거 요청 (RMBG-1.4)
+    const bgRes = await fetch(
+      "https://router.huggingface.co/hf-inference/models/briaai/RMBG-1.4",
       {
         method: "POST",
         headers: {
@@ -29,19 +28,17 @@ export const onRequestPost = async ({ request, env }) => {
       }
     );
 
-    // ✅ 4. 응답 상태 확인
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API 요청 실패 (${response.status}) - ${errText}`);
+    if (!bgRes.ok) {
+      const errText = await bgRes.text();
+      throw new Error(`배경제거 실패 (${bgRes.status}) - ${errText}`);
     }
 
-    // ✅ 5. 결과 바이너리 → Base64 변환
-    const resultBuffer = await response.arrayBuffer();
+    // ✅ 4. 결과 처리
+    const bgBuffer = await bgRes.arrayBuffer();
     const base64 = btoa(
-      String.fromCharCode(...new Uint8Array(resultBuffer))
+      String.fromCharCode(...new Uint8Array(bgBuffer))
     );
 
-    // ✅ 6. 성공 응답 반환
     return new Response(
       JSON.stringify({ success: true, result: base64 }),
       { headers: { "Content-Type": "application/json" } }
@@ -50,10 +47,7 @@ export const onRequestPost = async ({ request, env }) => {
     console.error("🚨 remove-bg 오류:", err);
     return new Response(
       JSON.stringify({ success: false, error: err.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 };
