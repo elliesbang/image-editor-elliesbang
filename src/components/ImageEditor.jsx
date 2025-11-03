@@ -1,17 +1,35 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 export default function ImageEditor({ selectedImage }) {
-  const getImageURL = () => {
+  // ✅ getImageURL()을 useMemo로 감싸서 매 렌더링마다 안정적으로 평가
+  const imgSrc = useMemo(() => {
     if (!selectedImage) return null;
-    if (selectedImage.file) return URL.createObjectURL(selectedImage.file);
-    if (selectedImage.thumbnail)
-      return `data:image/png;base64,${selectedImage.thumbnail}`;
-    if (typeof selectedImage === "string")
-      return `data:image/png;base64,${selectedImage}`;
-    return null;
-  };
 
-  const imgSrc = getImageURL();
+    // 파일 타입인 경우 (File 객체)
+    if (selectedImage instanceof File) {
+      return URL.createObjectURL(selectedImage);
+    }
+
+    // 객체 형태로 전달된 경우 (예: { file, thumbnail })
+    if (typeof selectedImage === "object") {
+      if (selectedImage.file instanceof File) {
+        return URL.createObjectURL(selectedImage.file);
+      }
+      if (selectedImage.thumbnail) {
+        return `data:image/png;base64,${selectedImage.thumbnail}`;
+      }
+    }
+
+    // 문자열(base64 혹은 URL)로 전달된 경우
+    if (typeof selectedImage === "string") {
+      // base64가 이미 prefix를 포함하는 경우
+      if (selectedImage.startsWith("data:image")) return selectedImage;
+      // prefix 없는 순수 base64 문자열
+      return `data:image/png;base64,${selectedImage}`;
+    }
+
+    return null;
+  }, [selectedImage]);
 
   // ✅ 배경제거 (Hugging Face API)
   const removeBackground = async () => {
@@ -28,7 +46,7 @@ export default function ImageEditor({ selectedImage }) {
       const data = await res.json();
       if (!data.result) throw new Error("배경제거 실패");
 
-      // ✅ 결과 바로 크롭으로 전달 가능
+      // ✅ 결과 바로 크롭으로 전달
       await cropLocally(data.result);
     } catch (err) {
       console.error("배경제거 오류:", err);
@@ -80,7 +98,6 @@ export default function ImageEditor({ selectedImage }) {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
-      // 중앙 기준 80% 크롭
       const cropWidth = image.width * 0.8;
       const cropHeight = image.height * 0.8;
       const startX = image.width * 0.1;
@@ -131,7 +148,6 @@ export default function ImageEditor({ selectedImage }) {
       canvas.width = image.width;
       canvas.height = image.height;
 
-      // 노이즈 제거 효과 (살짝 블러 + 명암 조정)
       ctx.filter = "blur(1px) contrast(110%) brightness(105%)";
       ctx.drawImage(image, 0, 0);
 
