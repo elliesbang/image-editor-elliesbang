@@ -10,26 +10,23 @@ export const onRequestPost = async ({ request }) => {
       );
     }
 
-    // ✅ Blob → ImageBitmap 변환
-    const blob = imageFile;
-    const imageBitmap = await createImageBitmap(blob);
+    // ✅ Blob → ImageBitmap
+    const imageBitmap = await createImageBitmap(imageFile);
     const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(imageBitmap, 0, 0);
 
-    // ✅ 이미지 데이터 픽셀 분석
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let minX = canvas.width,
       minY = canvas.height,
       maxX = 0,
       maxY = 0;
 
-    // ✅ alpha 기준 완화 (기존 10 → 20)
-    // 일부 반투명 경계도 피사체로 인식되게 함
+    // ✅ 픽셀 탐색 (투명도 낮은 외곽도 포함하도록 완화)
     for (let y = 0; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {
         const alpha = imgData[(y * canvas.width + x) * 4 + 3];
-        if (alpha > 20) { // 투명하지 않은 픽셀 감지
+        if (alpha > 3) { // 🔹기존 10 → 3으로 완화
           if (x < minX) minX = x;
           if (y < minY) minY = y;
           if (x > maxX) maxX = x;
@@ -38,16 +35,15 @@ export const onRequestPost = async ({ request }) => {
       }
     }
 
-    // ✅ 최소 여백(5%) 남기기 → 피사체 절대 잘리지 않게
-    const paddingRatio = 0.05;
-    const paddingX = Math.floor((maxX - minX) * paddingRatio);
-    const paddingY = Math.floor((maxY - minY) * paddingRatio);
+    // ✅ 사방 여백 최소화 (padding 거의 제거)
+    const paddingX = Math.floor((maxX - minX) * 0.01); // 🔹1%만 남김
+    const paddingY = Math.floor((maxY - minY) * 0.01);
     minX = Math.max(0, minX - paddingX);
     minY = Math.max(0, minY - paddingY);
     maxX = Math.min(canvas.width, maxX + paddingX);
     maxY = Math.min(canvas.height, maxY + paddingY);
 
-    // ✅ 크롭된 캔버스 생성
+    // ✅ 크롭
     const cropW = maxX - minX + 1;
     const cropH = maxY - minY + 1;
     const croppedCanvas = new OffscreenCanvas(cropW, cropH);
@@ -56,8 +52,7 @@ export const onRequestPost = async ({ request }) => {
 
     // ✅ Base64로 반환
     const croppedBlob = await croppedCanvas.convertToBlob({ type: "image/png" });
-    const arrayBuffer = await croppedBlob.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const base64 = Buffer.from(await croppedBlob.arrayBuffer()).toString("base64");
 
     return new Response(JSON.stringify({ result: base64 }), {
       headers: { "Content-Type": "application/json" },
