@@ -241,4 +241,5 @@ export default function AdditionalEditor({ selectedImage }) {
       </button>
     </div>
   )}
-</div>
+ </div>
+</div>       
