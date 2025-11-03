@@ -14,8 +14,12 @@ function App() {
   const [selectedResult, setSelectedResult] = useState(null); // ✅ 추가
   const [loginOpen, setLoginOpen] = useState(false);
 
+  // ✅ 수정 부분: 업로드 시 첫 이미지를 자동 선택
   const handleImagesUploaded = (newImages) => {
     setImages((prev) => [...prev, ...newImages]);
+    if (newImages.length > 0) {
+      setSelectedImage(newImages[0]); // ✅ 자동 선택 추가
+    }
   };
 
   return (
