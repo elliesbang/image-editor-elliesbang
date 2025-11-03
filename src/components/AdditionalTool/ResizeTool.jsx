@@ -27,7 +27,6 @@ export default function ResizeTool({
     setLoading(true);
 
     try {
-      // ✅ 이미지 객체 로드
       const img = new Image();
       img.src =
         typeof currentImage === "string"
@@ -39,27 +38,24 @@ export default function ResizeTool({
         img.onerror = rej;
       });
 
-      // ✅ 비율 계산
       const aspect = img.width / img.height;
       const newW = parseInt(resizeW);
       const newH = keepAspect ? Math.round(newW / aspect) : img.height;
 
-      // ✅ Canvas로 리사이즈
       const canvas = document.createElement("canvas");
       canvas.width = newW;
       canvas.height = newH;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, newW, newH);
 
-      // ✅ 결과를 base64로 변환
       const base64 = canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
       const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob();
       const file = new File([blob], "resized.png", { type: "image/png" });
 
-      // ✅ 결과 전파 (ProcessResult 섹션으로 전달)
+      // ✅ 처리결과 섹션으로 전달
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
-          detail: { file, thumbnail: base64 },
+          detail: { file, thumbnail: `data:image/png;base64,${base64}` }, // 👈 수정된 부분
         })
       );
 
