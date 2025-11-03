@@ -148,6 +148,15 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
     }
   };
 
+  const handleDeleteSingle = (entry) => {
+    if (!entry) return;
+    setLocalResults((prev) => prev.filter((item) => item.id !== entry.id));
+    setSelectedResults((prev) => prev.filter((id) => id !== entry.id));
+    if (typeof setSelectedResult === "function") {
+      setSelectedResult((current) => (current === entry.src ? null : current));
+    }
+  };
+
   // ✅ 개별 다운로드
   const handleDownload = (entry, index) => {
     if (!entry) return;
@@ -179,6 +188,51 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
     saveAs(content, "elliesbang_results.zip");
   };
 
+  useEffect(() => {
+    let isActive = true;
+
+    const fillMissingDimensions = async () => {
+      const targets = localResults.filter(
+        (entry) => entry && (!entry.meta?.width || !entry.meta?.height)
+      );
+
+      if (targets.length === 0) return;
+
+      const updates = await Promise.all(
+        targets.map(async (entry) => ({
+          id: entry.id,
+          ...(await loadDimensions(entry.src)),
+        }))
+      );
+
+      if (!isActive) return;
+
+      const hasValidUpdate = updates.some(
+        (item) => item.width && item.height
+      );
+      if (!hasValidUpdate) return;
+
+      setLocalResults((prev) =>
+        prev.map((entry) => {
+          if (!entry) return entry;
+          if (entry.meta?.width && entry.meta?.height) return entry;
+          const update = updates.find((item) => item.id === entry.id);
+          if (!update?.width || !update?.height) return entry;
+          return {
+            ...entry,
+            meta: { ...entry.meta, width: update.width, height: update.height },
+          };
+        })
+      );
+    };
+
+    fillMissingDimensions();
+
+    return () => {
+      isActive = false;
+    };
+  }, [localResults]);
+
   return (
     <div className="result-section">
       {localResults.length > 0 && (
@@ -202,6 +256,16 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
               onClick={() => toggleSelect(entry)}
             >
               <img src={entry.src} alt={`결과 ${idx + 1}`} className="thumb" />
+              <button
+                className="delete-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteSingle(entry);
+                }}
+                aria-label="이미지 삭제"
+              >
+                ✕
+              </button>
               {entry.meta?.width && entry.meta?.height && (
                 <div className="thumb-meta">
                   {entry.meta.width}×{entry.meta.height}px
@@ -214,6 +278,7 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
                   e.stopPropagation();
                   handleDownload(entry, idx);
                 }}
+                aria-label="이미지 저장"
               >
                 💾
               </button>
