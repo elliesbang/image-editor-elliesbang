@@ -4,6 +4,8 @@ export default function AdditionalEditor({
   selectedImage,
   selectedImages,
   setSelectedImages,
+  selectedUploadImage,
+  selectedResultImage,
 }) {
   const [resizeW, setResizeW] = useState("");
   const [resizeH, setResizeH] = useState("");
@@ -14,6 +16,10 @@ export default function AdditionalEditor({
     Array.isArray(selectedImages) && selectedImages.includes(selectedImage)
       ? selectedImages[selectedImages.indexOf(selectedImage)]
       : selectedImage;
+
+  const hasActiveImage = Boolean(
+    selectedUploadImage || selectedResultImage || syncedSelectedImage
+  );
 
   // ✅ 이미지 안정적으로 가져오기 (객체, File, base64 모두 인식)
   const getCurrentImage = () => {
@@ -164,7 +170,7 @@ export default function AdditionalEditor({
           value={resizeW}
           onChange={(e) => setResizeW(e.target.value)}
         />
-        <button className="btn" onClick={handleResize} disabled={loading}>
+        <button className="btn" onClick={handleResize} disabled={loading || !hasActiveImage}>
           리사이즈 실행
         </button>
       </div>
@@ -192,7 +198,7 @@ export default function AdditionalEditor({
             const colors = document.getElementById("svgColorSelect").value;
             processImage("convert-svg", { colors });
           }}
-          disabled={loading}
+          disabled={loading || !hasActiveImage}
         >
           SVG 변환
         </button>
@@ -214,7 +220,7 @@ export default function AdditionalEditor({
             const caption = document.getElementById("gifCaption").value.trim();
             processImage("convert-gif", { caption });
           }}
-          disabled={loading}
+          disabled={loading || !hasActiveImage}
         >
           GIF 변환
         </button>
@@ -237,7 +243,7 @@ export default function AdditionalEditor({
             const desc = document.getElementById("analyzeDesc").value;
             await handleAnalyze(desc);
           }}
-          disabled={loading}
+          disabled={loading || !hasActiveImage}
         >
           {loading ? "분석 중..." : "키워드 분석"}
         </button>
