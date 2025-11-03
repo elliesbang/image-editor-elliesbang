@@ -241,7 +241,7 @@ export default function AdditionalEditor({ selectedImage }) {
       </button>
     </div>
   )}
- </div>
-</div>       
-);
+     </div> {/* 키워드 분석 블록 닫힘 */}
+  </div>   {/* tools-wrap 닫힘 */}
+  );
 }
