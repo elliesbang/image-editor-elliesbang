@@ -76,18 +76,28 @@ export const onRequestPost = async ({ request, env }) => {
       });
     }
 
-    // ✅ 공통 키워드 계산
+    // ✅ 공통 키워드 및 유니크 키워드 계산
     const sets = perImageResults.map((p) => new Set(p.keywords));
     const common =
       sets.length > 1
         ? [...sets[0]].filter((k) => sets.every((s) => s.has(k)))
         : [];
 
+    const perImageWithUnique = perImageResults.map((p) => ({
+      ...p,
+      uniqueKeywords: (p.keywords || []).filter((k) => !common.includes(k)),
+    }));
+
+    const overallTitle =
+      perImageResults[0]?.title ||
+      (perImageResults.length > 1 ? "키워드 분석 결과" : "분석 결과");
+
     return new Response(
       JSON.stringify({
         success: true,
+        title: overallTitle,
         commonKeywords: common,
-        perImage: perImageResults,
+        perImage: perImageWithUnique,
       }),
       { headers: { "Content-Type": "application/json" } }
     );

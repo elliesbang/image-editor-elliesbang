@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-export default function ProcessResult({ results = [], setSelectedResult }) {
+export default function ProcessResult({ results, setSelectedResult }) {
+  const initialResults = Array.isArray(results) ? results : [];
   const [selectedResults, setSelectedResults] = useState([]);
-  const [localResults, setLocalResults] = useState(results);
+  const [localResults, setLocalResults] = useState(initialResults);
 
   // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
   useEffect(() => {
@@ -33,7 +34,11 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   }, []);
 
   // ✅ 외부 results 변경 시 동기화
-  useEffect(() => setLocalResults(results), [results]);
+  useEffect(() => {
+    if (Array.isArray(results)) {
+      setLocalResults(results);
+    }
+  }, [results]);
 
   const getImageSrc = (img) =>
     img.startsWith("data:image") ? img : `data:image/png;base64,${img}`;
