@@ -11,14 +11,14 @@ import "./App.css";
 function App() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [selectedResult, setSelectedResult] = useState(null); // ✅ 추가
+  const [selectedResult, setSelectedResult] = useState(null);
   const [loginOpen, setLoginOpen] = useState(false);
 
-  // ✅ 수정 부분: 업로드 시 첫 이미지를 자동 선택
+  // ✅ 업로드 시 첫 이미지를 자동 선택
   const handleImagesUploaded = (newImages) => {
     setImages((prev) => [...prev, ...newImages]);
     if (newImages.length > 0) {
-      setSelectedImage(newImages[0]); // ✅ 자동 선택 추가
+      setSelectedImage(newImages[0]);
     }
   };
 
@@ -40,7 +40,10 @@ function App() {
         {/* 이미지 편집 */}
         <section className="app-section">
           <div className="section-header">🎨 이미지 편집</div>
-          <ImageEditor selectedImage={selectedImage} />
+          <ImageEditor
+            selectedImage={selectedImage}
+            onProcessComplete={(resultImage) => setSelectedResult(resultImage)} // ✅ 추가
+          />
         </section>
 
         {/* 처리 결과 */}
@@ -50,7 +53,8 @@ function App() {
             images={images}
             selectedImage={selectedImage}
             setSelectedImage={setSelectedImage}
-            setSelectedResult={setSelectedResult} // ✅ 추가
+            selectedResult={selectedResult} // ✅ 전달
+            setSelectedResult={setSelectedResult}
           />
         </section>
 
@@ -58,8 +62,8 @@ function App() {
         <section className="app-section">
           <div className="section-header">⚙️ 추가 기능</div>
           <AdditionalEditor
-            selectedUploadImage={selectedImage}  // 업로드 쪽 선택
-            selectedResultImage={selectedResult} // 처리 결과 쪽 선택
+            selectedUploadImage={selectedImage}
+            selectedResultImage={selectedResult}
           />
         </section>
       </main>
