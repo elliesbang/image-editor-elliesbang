@@ -18,7 +18,7 @@ export const onRequestPost = async ({ request, env }) => {
     // ✅ 3. 허깅페이스 새 엔드포인트 (Inference Providers 라우터)
     // ❗ 모델 주소는 /hf-inference/models/{model} 형태로 접근해야 함
     const response = await fetch(
-      "https://router.huggingface.co/models/Sanster/lama-cleaner",
+      "https://router.huggingface.co/hf-inference/models/Sanster/lama-cleaner",
       {
         method: "POST",
         headers: {
