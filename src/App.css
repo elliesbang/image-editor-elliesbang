@@ -11,7 +11,7 @@
 /* 메인 */
 .app-main {
   width: 100%;
-  max-width: 420px; /* 모바일 기준 폭 */
+  max-width: 420px;
   margin: 0 auto;
   padding: 100px 16px 48px;
   display: flex;
@@ -65,25 +65,11 @@
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.9rem;
-  white-space: nowrap; /* ✅ 글씨 줄바꿈 방지 */
+  white-space: nowrap;
   cursor: pointer;
 }
 .header-button:hover {
   background: #ffcc00;
-}
-
-/* 🌼 섹션 제목 */
-.section-header {
-  width: 100%;
-  background: transparent;
-  color: #000;
-  font-weight: 700;
-  font-size: 1rem;
-  text-align: left;
-  padding: 0 0 6px 2px;
-  border-radius: 0;
-  margin-bottom: 10px;
-  border-bottom: 2px solid #ffd331;
 }
 
 /* 🌼 버튼 */
@@ -99,36 +85,56 @@ button, .btn {
   transition: 0.2s ease;
   font-size: 0.95rem;
 }
-button:last-child, .btn:last-child {
-  margin-bottom: 0;
-}
 button:hover, .btn:hover {
   background: #ffcc00;
 }
 
-/* 🌼 썸네일 */
+/* 🌼 이미지 썸네일 */
 .thumbnail-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
-  justify-items: center;
 }
-
+.thumb-wrapper {
+  position: relative;
+  width: 100%;
+}
 .thumb {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 8px;
   border: 2px solid transparent;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: 0.2s ease;
 }
-
 .thumb.selected {
   border-color: #ffd331;
   transform: scale(1.02);
 }
 
-/* 🌼 추가 기능 구조 */
+/* ✅ 개별 삭제 버튼 (마우스 호버 시 X 표시) */
+.delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.8rem;
+  line-height: 20px;
+  text-align: center;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.thumb-wrapper:hover .delete-btn {
+  opacity: 1;
+}
+
+/* 🌼 추가 기능 */
 .tools-wrap {
   display: flex;
   flex-direction: column;
@@ -159,7 +165,7 @@ button:hover, .btn:hover {
   resize: none;
 }
 
-/* ✅ SVG 변환 - 색상 옵션 */
+/* ✅ SVG 변환 옵션 */
 .svg-color-select {
   width: 100%;
   padding: 10px;
@@ -170,7 +176,7 @@ button:hover, .btn:hover {
   color: #333;
 }
 
-/* ✅ GIF 변환 - 설명 텍스트 */
+/* ✅ GIF 설명 입력 */
 .gif-desc {
   width: 100%;
   padding: 10px;
@@ -178,10 +184,10 @@ button:hover, .btn:hover {
   border-radius: 8px;
   font-size: 0.9rem;
   background: #fffef8;
-  resize: none;
+  min-height: 60px;
 }
 
-/* ✅ 키워드 분석 결과 박스 */
+/* ✅ 키워드 분석 결과 */
 .keyword-output {
   background: #fffef0;
   border: 1px solid #ffe69a;
@@ -192,26 +198,7 @@ button:hover, .btn:hover {
   color: #333;
 }
 
-/* 🌼 처리 결과 */
-#result-section {
-  display: none;
-}
-#process-section {
-  display: flex;
-}
-
-/* 🌼 힌트 박스 */
-.hint-box {
-  width: 100%;
-  background: #fff8d8;
-  border: 1px dashed #ffd331;
-  color: #4b3a00;
-  padding: 10px;
-  border-radius: 10px;
-  font-size: 0.9rem;
-}
-
-/* 🌼 모달 공통 수정 (위치 중앙 고정) */
+/* 🌼 모달 중앙 정렬 */
 .modal-backdrop,
 .modal-overlay {
   position: fixed;
@@ -222,8 +209,6 @@ button:hover, .btn:hover {
   background: rgba(0,0,0,0.4);
   z-index: 1000;
 }
-
-/* ✅ 모달 내용 중앙 정렬 */
 .modal-card,
 .modal-content {
   background: #fff;
@@ -231,49 +216,20 @@ button:hover, .btn:hover {
   padding: 24px 20px;
   width: 90%;
   max-width: 420px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
   animation: fadeIn 0.2s ease;
-  position: relative;
-  top: auto !important;
-  bottom: auto !important;
 }
-
-/* ✅ 모달 닫기 버튼 */
 .modal-close {
   position: absolute;
   top: 8px;
   right: 10px;
-  border: none;
   background: transparent;
-  font-size: 1rem;
-  cursor: pointer;
+  border: none;
   color: #777;
-}
-.modal-close:hover {
-  color: #000;
+  cursor: pointer;
 }
 
-/* 🌼 푸터 */
-footer {
-  width: 100%;
-  max-width: 420px;
-  margin-top: auto;
-  padding: 20px 0 40px;
-  text-align: center;
-  font-size: 0.8rem;
-  color: #555;
-  position: relative; /* ✅ 하단 고정 해제 */
-}
-footer a {
-  color: #555;
-  text-decoration: none;
-  margin: 0 10px;
-}
-footer a:hover {
-  text-decoration: underline;
-}
-
-/* 🌼 PC 반응형 (1024px 이상일 때 화면 꽉 차게) */
+/* 🌼 PC 반응형 */
 @media (min-width: 1024px) {
   .app-main {
     max-width: 100%;
@@ -282,28 +238,10 @@ footer a:hover {
     grid-template-columns: 1fr 1fr;
     gap: 40px;
   }
-
-  .app-section {
-    padding: 32px;
-    border-radius: 20px;
-  }
-
   .header {
     max-width: 100%;
     padding: 20px 80px;
   }
-
-  .header-left {
-    font-size: 1.4rem;
-  }
-
-  .header-button {
-    font-size: 1rem;
-    padding: 8px 20px;
-  }
-
-  footer {
-    max-width: 100%;
-    padding: 40px 0;
-  }
+  .header-left { font-size: 1.4rem; }
+  .header-button { padding: 8px 20px; }
 }
