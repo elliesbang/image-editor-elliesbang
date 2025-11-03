@@ -1,36 +1,49 @@
+import sharp from "sharp";
+
 export const onRequestPost = async ({ request }) => {
   try {
     const formData = await request.formData();
-    const imageFile = formData.get("image");
-    if (!imageFile)
-      return new Response(JSON.stringify({ error: "이미지가 없습니다." }), { status: 400 });
+    const imageFile = formData.get("file");
 
-    const blob = await imageFile.arrayBuffer();
-    const imageBitmap = await createImageBitmap(await new Blob([blob]));
-    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(imageBitmap, 0, 0);
+    if (!imageFile) {
+      return new Response(
+        JSON.stringify({ error: "이미지 파일이 없습니다." }),
+        { status: 400 }
+      );
+    }
 
-    const cropSize = Math.min(imageBitmap.width, imageBitmap.height);
-    const sx = (imageBitmap.width - cropSize) / 2;
-    const sy = (imageBitmap.height - cropSize) / 2;
+    // ✅ 파일을 Buffer로 변환
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    let image = sharp(buffer);
 
-    const cropped = ctx.getImageData(sx, sy, cropSize, cropSize);
-    const canvasCrop = new OffscreenCanvas(cropSize, cropSize);
-    const ctxCrop = canvasCrop.getContext("2d");
-    ctxCrop.putImageData(cropped, 0, 0);
+    // ✅ 메타데이터 확인
+    const meta = await image.metadata();
 
-    const blobResult = await canvasCrop.convertToBlob({ type: "image/png" });
-    const buffer = await blobResult.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    // ✅ 투명 또는 흰색 여백 자동 제거
+    try {
+      // 투명 여백 제거 (투명도 있는 이미지)
+      image = image.trim({ threshold: 10 });
+    } catch {
+      // 흰 배경 이미지의 경우 흰색 여백 제거
+      image = image
+        .flatten({ background: "#ffffff" })
+        .trim({ threshold: 240 });
+    }
 
-    return new Response(JSON.stringify({ result: base64, success: true }), {
+    // ✅ 결과 버퍼 생성
+    const outputBuffer = await image.toBuffer();
+
+    // ✅ base64 인코딩 변환
+    const base64 = outputBuffer.toString("base64");
+
+    return new Response(JSON.stringify({ result: base64 }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("🚨 crop 오류:", err);
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ error: "크롭 실패", detail: err.message }),
+      { status: 500 }
+    );
   }
 };
