@@ -50,7 +50,7 @@
 .header-left {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #000; /* 🔹 검정 텍스트 */
+  color: #000;
 }
 
 .header-right {
@@ -89,7 +89,7 @@
 button, .btn {
   width: 100%;
   padding: 12px 0;
-  margin-bottom: 8px; /* 버튼 간 간격 */
+  margin-bottom: 8px;
   background: #ffd331;
   border: none;
   border-radius: 10px;
@@ -99,7 +99,7 @@ button, .btn {
   font-size: 0.95rem;
 }
 button:last-child, .btn:last-child {
-  margin-bottom: 0; /* 마지막 버튼은 간격 제거 */
+  margin-bottom: 0;
 }
 button:hover, .btn:hover {
   background: #ffcc00;
@@ -108,7 +108,7 @@ button:hover, .btn:hover {
 /* 🌼 썸네일 */
 .thumbnail-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr); /* ✅ 5열 고정 */
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   justify-items: center;
 }
@@ -160,7 +160,7 @@ button:hover, .btn:hover {
 
 /* 🌼 처리 결과 */
 #result-section {
-  display: none; /* 중복 방지 */
+  display: none;
 }
 #process-section {
   display: flex;
@@ -177,50 +177,7 @@ button:hover, .btn:hover {
   font-size: 0.9rem;
 }
 
-/* 🌼 로그인 모달 */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.modal-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px 16px;
-  width: 90%;
-  max-width: 360px;
-}
-.modal-title {
-  font-weight: 700;
-  font-size: 1.1rem;
-  text-align: center;
-  margin-bottom: 12px;
-}
-.modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.btn-wide {
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  background: #ffd331;
-  font-weight: 700;
-}
-.modal-close {
-  width: 100%;
-  padding: 8px;
-  border-radius: 10px;
-  background: #fafafa;
-  border: 1px solid #ddd;
-  font-size: 0.9rem;
-}
-
-/* 🌼 푸터 (텍스트 링크형) */
+/* 🌼 푸터 */
 footer {
   width: 100%;
   max-width: 420px;
@@ -230,271 +187,46 @@ footer {
   font-size: 0.8rem;
   color: #555;
 }
-
 footer a {
   color: #555;
   text-decoration: none;
   margin: 0 10px;
 }
-
 footer a:hover {
   text-decoration: underline;
 }
 
-/* 🌼 푸터 모달 (중앙 팝업형) */
-.modal-overlay {
-  position: fixed;          /* ✅ 화면 전체 고정 */
-  inset: 0;                 /* top/right/bottom/left: 0 */
-  background: rgba(0, 0, 0, 0.4); /* 어두운 반투명 배경 */
-  display: flex;
-  align-items: center;      /* 수직 중앙 */
-  justify-content: center;  /* 수평 중앙 */
-  z-index: 1000;            /* 다른 요소 위 */
-}
+/* 🌼 PC 반응형 (1024px 이상일 때 화면 꽉 차게) */
+@media (min-width: 1024px) {
+  .app-main {
+    max-width: 100%;
+    padding: 120px 80px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
 
-.modal-content {
-  background: #fff;
-  border-radius: 14px;
-  padding: 24px 20px;
-  width: 90%;
-  max-width: 420px;         /* 모바일 폭에 맞춤 */
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-  animation: fadeIn 0.2s ease;
-  position: relative;
-}
+  .app-section {
+    padding: 32px;
+    border-radius: 20px;
+  }
 
-.modal-close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  border: none;
-  background: transparent;
-  font-size: 1rem;
-  cursor: pointer;
-  color: #777;
-}
+  .header {
+    max-width: 100%;
+    padding: 20px 80px;
+  }
 
-.modal-close:hover {
-  color: #000;
-}
+  .header-left {
+    font-size: 1.4rem;
+  }
 
-.modal-body {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  color: #333;
-  line-height: 1.5;
-  overflow-y: auto;
-  max-height: 60vh;
-}
+  .header-button {
+    font-size: 1rem;
+    padding: 8px 16px;
+  }
 
-/* 살짝 부드럽게 등장 */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* 🌼 이미지 업로드 (드래그 + 버튼 3컬럼 통합) */
-.upload-section {
-  position: relative;
-  border: 2px dashed #ffd331;
-  border-radius: 12px;
-  padding: 24px 12px;
-  background: #fffdf5;
-  text-align: center;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.upload-section.dragging {
-  background: #fff9d6;
-  border-color: #ffcc00;
-}
-
-.upload-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-}
-
-.upload-input {
-  display: none;
-}
-
-.upload-text {
-  font-weight: 700;
-  color: #333;
-}
-
-.upload-sub {
-  font-size: 0.85rem;
-  color: #777;
-  margin-top: 4px;
-}
-
-/* ✅ 전체 선택 / 해제 / 삭제 버튼 */
-.control-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  width: 100%;
-  margin: 12px 0;
-}
-
-.control-buttons button {
-  background: #ffd331;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 0;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.control-buttons button:hover {
-  background: #ffcc00;
-}
-
-/* 🌼 처리 결과 (이미지 업로드와 동일 구조) */
-.result-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* ✅ 버튼 3컬럼 */
-.result-section .control-buttons {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  width: 100%;
-  margin: 8px 0;
-}
-
-.result-section .control-buttons button {
-  background: #ffd331;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 0;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.result-section .control-buttons button:hover {
-  background: #ffcc00;
-}
-
-/* ✅ 결과 썸네일 5열 */
-.result-section .thumbnail-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  justify-items: center;
-}
-
-.result-section .thumb-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.result-section .thumb {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  transition: 0.2s ease;
-}
-
-.result-section .thumb-wrapper.selected .thumb {
-  border-color: #ffd331;
-}
-
-.result-section .save-btn {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255, 211, 49, 0.9);
-  border: none;
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #333;
-  cursor: pointer;
-}
-
-.result-section .save-btn:hover {
-  background: rgba(255, 204, 0, 0.95);
-}
-
-.download-all-wrapper {
-  margin-top: 8px;
-}
-
-.download-all-wrapper button {
-  width: 100%;
-  background: #ffd331;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.download-all-wrapper button:hover {
-  background: #ffcc00;
-}
-
-/* 🌼 개별 이미지 삭제 버튼 */
-.thumb-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.delete-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 0.8rem;
-  line-height: 20px;
-  opacity: 0;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.thumb-wrapper:hover .delete-btn {
-  opacity: 1;
-}
-
-/* 🌼 이미지 편집 버튼 그리드 */
-.button-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.button-grid .btn {
-  background: #ffd331;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  padding: 12px 0;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.button-grid .btn:hover {
-  background: #ffcc00;
+  footer {
+    max-width: 100%;
+    padding: 40px 0;
+  }
 }
