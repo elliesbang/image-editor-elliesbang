@@ -7,34 +7,37 @@ export default function CropButton({ selectedImage, disabled }) {
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
 
     try {
-      const image = new Image();
-      image.src = imgSrc;
-      await new Promise((resolve) => (image.onload = resolve));
+      // ✅ Base64 추출
+      const base64 = imgSrc.split(",")[1];
 
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const cropWidth = image.width * 0.8;
-      const cropHeight = image.height * 0.8;
-      const startX = image.width * 0.1;
-      const startY = image.height * 0.1;
+      // ✅ Cloudflare Function 호출
+      const response = await fetch("/api/crop-v3", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
 
-      canvas.width = cropWidth;
-      canvas.height = cropHeight;
-      ctx.drawImage(image, startX, startY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      // ✅ 서버 응답 처리
+      const data = await response.json();
+      if (!data.image) throw new Error("서버에서 이미지가 반환되지 않았습니다.");
 
-      const croppedBase64 = canvas.toDataURL("image/png").split(",")[1];
-      const blob = await fetch(canvas.toDataURL("image/png")).then((r) => r.blob());
+      // ✅ 응답받은 base64 → Blob → File 변환
+      const croppedBase64 = data.image.split(",")[1];
+      const blob = await fetch(`data:image/png;base64,${croppedBase64}`).then((r) =>
+        r.blob()
+      );
       const file = new File([blob], "cropped.png", { type: "image/png" });
 
+      // ✅ 상위 컴포넌트에 완료 이벤트 전달
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
           detail: { file, thumbnail: croppedBase64 },
         })
       );
 
-      alert("크롭 완료!");
+      alert("✅ 서버 크롭 완료! (피사체 전체 유지)");
     } catch (err) {
-      console.error("크롭 오류:", err);
+      console.error("🚨 크롭 오류:", err);
       alert("크롭 중 오류가 발생했습니다.");
     }
   };
