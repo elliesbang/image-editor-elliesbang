@@ -6,20 +6,36 @@ export default function RemoveBgCropButton({ selectedImage, disabled }) {
     const imgSrc = getImageURL(selectedImage);
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
 
-    try {
-      // ✅ Base64 추출
-      const base64 = imgSrc.split(",")[1];
+    // ✅ Base64 안전 추출 + 유효성 검사
+    const base64 = imgSrc.includes(",") ? imgSrc.split(",")[1] : imgSrc;
 
-      // ✅ 서버로 JSON 형식 전송
+    if (!base64 || base64.length < 100) {
+      alert("이미지 데이터가 비정상적이에요. 다시 업로드해주세요.");
+      console.error("🚨 base64 추출 실패:", imgSrc);
+      return;
+    }
+
+    try {
+      console.log("🚀 서버로 전송 중:", base64.slice(0, 50) + "...");
+
       const res = await fetch("/api/remove-bg-crop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: base64 }),
       });
 
-      const data = await res.json();
+      // ✅ 응답 검사
+      const text = await res.text();
+      console.log("📥 서버 응답:", text);
 
-      // ✅ 서버에서 반환된 Base64 확인
+      const data = JSON.parse(text);
+
+      if (!res.ok) {
+        alert(`서버 오류 (${res.status})`);
+        console.error("❌ 서버 응답:", data);
+        return;
+      }
+
       if (!data.image) throw new Error("서버에서 결과 이미지를 반환하지 않았습니다.");
 
       // ✅ Blob/File 변환
