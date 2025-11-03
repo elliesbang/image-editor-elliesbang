@@ -61,7 +61,7 @@
 .header-button {
   background: #ffd331;
   border: none;
-  padding: 6px 16px; /* ✅ 폭 늘림 */
+  padding: 6px 16px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.9rem;
@@ -125,7 +125,7 @@ button:hover, .btn:hover {
   transform: scale(1.02);
 }
 
-/* ✅ 개별 삭제 버튼 (마우스 호버 시 X 표시) */
+/* ✅ 개별 삭제 버튼 */
 .delete-btn {
   position: absolute;
   top: 4px;
@@ -269,19 +269,47 @@ html, body {
 #root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /* 화면 전체 높이 확보 */
+  min-height: 100vh;
 }
 
-/* 메인 콘텐츠는 남는 공간을 차지 */
 main {
   flex: 1;
 }
 
-/* 푸터는 항상 하단 고정처럼 */
+/* 🌼 푸터 */
 footer {
   text-align: center;
-  padding: 20px 0;
-  background-color: #fff9c4; /* 엘리의방 테마 노랑 톤 */
+  padding: 32px 0;
+  margin-top: 40px;
+  background-color: #fffbe6;
   font-size: 0.9rem;
+  color: #333;
+  border-top: 1px solid #f4e48b;
+  line-height: 1.9;
+}
+
+/* ✅ 약관/정책 링크 */
+footer .footer-links {
+  margin-bottom: 18px;
+}
+footer a {
+  color: #555;
+  text-decoration: none;
+  margin: 0 10px;
+  display: inline-block;
+  padding: 4px 0;
+}
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* ✅ 하단 문구 */
+footer .footer-info {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px; /* 💛 두 문장 간 여백 */
+  font-size: 0.88rem;
   color: #555;
 }
