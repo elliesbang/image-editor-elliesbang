@@ -1,6 +1,5 @@
-export const onRequestPost = async ({ request }) => {
+export const onRequestPost = async ({ request, env }) => {
   try {
-    // ✅ 1. formData로 이미지 파일과 width 값 가져오기
     const formData = await request.formData();
     const imageFile = formData.get("image");
     const width = parseInt(formData.get("width"));
@@ -15,33 +14,40 @@ export const onRequestPost = async ({ request }) => {
       );
     }
 
-    // ✅ 2. 이미지 ArrayBuffer로 변환
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
+    // ✅ OpenAI API 호출 준비
+    const apiKey = env.OPENAI_API_KEY;
+    const openaiForm = new FormData();
+    openaiForm.append("image", imageFile, "input.png");
+    openaiForm.append("model", "gpt-image-1");
+    openaiForm.append("size", `${width}x${width}`); // 정사각 기준으로 리사이즈
 
-    // ✅ 3. Cloudflare의 built-in Image API 사용
-    // (HTMLRewriter처럼 Edge 환경에서 이미지 조작 가능)
-    const blob = new Blob([bytes]);
-    const imageBitmap = await createImageBitmap(blob);
+    // ✅ OpenAI 이미지 편집 API 호출
+    const response = await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: openaiForm,
+    });
 
-    // 비율 유지 계산
-    const aspect = imageBitmap.width / imageBitmap.height;
-    const newW = width;
-    const newH = Math.round(width / aspect);
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenAI 리사이즈 실패 (${response.status}): ${errText}`);
+    }
 
-    // ✅ 4. Canvas 없이 WASM 기반 리사이즈 (ImageData → bitmaprenderer)
-    const offscreen = new OffscreenCanvas(newW, newH);
-    const ctx = offscreen.getContext("2d");
-    ctx.drawImage(imageBitmap, 0, 0, newW, newH);
+    const result = await response.json();
 
-    // ✅ 5. Base64 변환
-    const blobOut = await offscreen.convertToBlob({ type: "image/png" });
-    const resultBuffer = await blobOut.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(resultBuffer)));
+    // ✅ 결과 파싱
+    const base64 = result.data?.[0]?.b64_json;
+    if (!base64) throw new Error("리사이즈 결과가 없습니다.");
 
-    // ✅ 6. 응답 반환
+    // ✅ 성공 응답
     return new Response(
-      JSON.stringify({ success: true, result: base64 }),
+      JSON.stringify({
+        success: true,
+        result: base64,
+        message: "OpenAI 리사이즈 완료",
+      }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -49,7 +55,7 @@ export const onRequestPost = async ({ request }) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: "리사이즈 중 오류 발생: " + err.message,
+        error: "리사이즈 처리 중 오류 발생: " + err.message,
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
