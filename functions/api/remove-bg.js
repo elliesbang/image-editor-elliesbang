@@ -1,46 +1,64 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const formData = await request.formData();
-    const imageFile = formData.get("file");
+    const { imageBase64 } = await request.json();
 
-    if (!imageFile) {
-      return new Response(
-        JSON.stringify({ error: "이미지 파일이 없습니다." }),
-        { status: 400 }
-      );
+    if (!imageBase64) {
+      return new Response(JSON.stringify({ error: "이미지 데이터가 없습니다." }), {
+        status: 400,
+      });
     }
 
-    const apiKey = env.HF_API_KEY;
-    const model = "briaai/RMBG-1.4"; // ✅ 최신 배경제거 모델
+    const apiKey = env.HF_TOKEN; // ✅ Hugging Face API 키 (환경변수에 저장)
+    if (!apiKey) {
+      throw new Error("HF_TOKEN 환경 변수가 설정되지 않았습니다.");
+    }
 
-    // ✅ Hugging Face 최신 라우터 엔드포인트
-    const response = await fetch(
-      `https://router.huggingface.co/hf-inference/models/${model}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: imageFile, // ✅ multipart/form-data ❌ → Blob 직접 전송 ✅
-      }
-    );
+    // ✅ Base64 → Blob 변환
+    const binary = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
+    const blob = new Blob([binary], { type: "image/png" });
+
+    // ✅ FormData 구성 (Hugging Face는 multipart/form-data만 허용)
+    const formData = new FormData();
+    formData.append("file", blob, "image.png");
+
+    // ✅ Hugging Face 모델 엔드포인트
+    const HF_MODEL = "briaai/RMBG-1.4"; // 예시 모델 (Remove Background)
+
+    // ✅ API 요청
+    const response = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: formData,
+    });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`배경제거 실패 (${response.status}): ${text}`);
+      const err = await response.text();
+      console.error("🚨 Hugging Face 응답 오류:", err);
+      return new Response(JSON.stringify({ error: "Hugging Face 요청 실패", detail: err }), {
+        status: 500,
+      });
     }
 
-    // ✅ 결과 이미지 base64 인코딩
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    // ✅ 이미지 Blob으로 응답 수신
+    const resultBlob = await response.blob();
+    const arrayBuffer = await resultBlob.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce(
+        (data, byte) => data + String.fromCharCode(byte),
+        ""
+      )
+    );
 
-    return new Response(JSON.stringify({ result: base64 }), {
+    // ✅ 최종 반환 (base64 PNG)
+    return new Response(JSON.stringify({ image: `data:image/png;base64,${base64}` }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("🚨 remove-bg 오류:", err);
     return new Response(
-      JSON.stringify({ error: "배경제거 실패", detail: err.message }),
+      JSON.stringify({ error: "remove-bg 처리 중 오류 발생", detail: err.message }),
       { status: 500 }
     );
   }
