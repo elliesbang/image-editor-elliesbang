@@ -1,16 +1,13 @@
 import React, { useMemo } from "react";
 
-export default function ImageEditor({ selectedImage }) {
+export default function ImageEditor({ selectedImage, onProcessComplete }) {
   // ✅ getImageURL()을 useMemo로 감싸서 매 렌더링마다 안정적으로 평가
   const imgSrc = useMemo(() => {
     if (!selectedImage) return null;
 
-    // 파일 타입인 경우 (File 객체)
     if (selectedImage instanceof File) {
       return URL.createObjectURL(selectedImage);
     }
-
-    // 객체 형태로 전달된 경우 (예: { file, thumbnail })
     if (typeof selectedImage === "object") {
       if (selectedImage.file instanceof File) {
         return URL.createObjectURL(selectedImage.file);
@@ -19,58 +16,38 @@ export default function ImageEditor({ selectedImage }) {
         return `data:image/png;base64,${selectedImage.thumbnail}`;
       }
     }
-
-    // 문자열(base64 혹은 URL)로 전달된 경우
     if (typeof selectedImage === "string") {
       if (selectedImage.startsWith("data:image")) return selectedImage;
       return `data:image/png;base64,${selectedImage}`;
     }
-
     return null;
   }, [selectedImage]);
 
   // ✅ 배경제거 (Hugging Face API)
-  const removeBackground = async () => {
-    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
-    try {
-      const blob = await fetch(imgSrc).then((r) => r.blob());
-      const binary = new Uint8Array(await blob.arrayBuffer());
-      const res = await fetch("/api/remove-bg", {
-        method: "POST",
-        headers: {},
-        body: binary,
-      });
-
-      const data = await res.json();
-      if (!data.result) throw new Error("배경제거 실패");
-
-      await cropLocally(data.result);
-    } catch (err) {
-      console.error("배경제거 오류:", err);
-      alert("배경제거 중 오류가 발생했습니다.");
-    }
-  };
-
-  // ✅ 배경제거만 (크롭 없이)
   const removeBackgroundOnly = async () => {
     if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
     try {
       const blob = await fetch(imgSrc).then((r) => r.blob());
-      const binary = new Uint8Array(await blob.arrayBuffer());
+      const formData = new FormData();
+      formData.append("image", blob, "input.png");
+
       const res = await fetch("/api/remove-bg", {
         method: "POST",
-        headers: {},
-        body: binary,
+        body: formData,
+        headers: { Accept: "application/json" }, // ✅ Content-Type 자동 설정됨
       });
 
       const data = await res.json();
-      if (!data.result) throw new Error("배경제거 실패");
+      if (!data.success) throw new Error(data.error || "배경제거 실패");
 
-      const fileBlob = await fetch(`data:image/png;base64,${data.result}`).then((r) =>
-        r.blob()
-      );
+      const resultUrl = `data:image/png;base64,${data.result}`;
+      const fileBlob = await fetch(resultUrl).then((r) => r.blob());
       const file = new File([fileBlob], "bg_removed.png", { type: "image/png" });
 
+      // ✅ 부모(App.jsx)에 결과 전달
+      onProcessComplete?.(resultUrl);
+
+      // ✅ 브라우저 이벤트로도 전달 (기존 구조 유지)
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
           detail: { file, thumbnail: data.result },
@@ -81,6 +58,30 @@ export default function ImageEditor({ selectedImage }) {
     } catch (err) {
       console.error("배경제거 오류:", err);
       alert("배경제거 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ✅ 배경제거 후 자동 크롭
+  const removeBackgroundAndCrop = async () => {
+    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
+    try {
+      const blob = await fetch(imgSrc).then((r) => r.blob());
+      const formData = new FormData();
+      formData.append("image", blob, "input.png");
+
+      const res = await fetch("/api/remove-bg", {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "배경제거 실패");
+
+      await cropLocally(data.result);
+    } catch (err) {
+      console.error("배경제거+크롭 오류:", err);
+      alert("배경제거+크롭 중 오류가 발생했습니다.");
     }
   };
 
@@ -115,7 +116,8 @@ export default function ImageEditor({ selectedImage }) {
       );
 
       const croppedBase64 = canvas.toDataURL("image/png").split(",")[1];
-      const blob = await fetch(canvas.toDataURL("image/png")).then((r) => r.blob());
+      const croppedUrl = `data:image/png;base64,${croppedBase64}`;
+      const blob = await fetch(croppedUrl).then((r) => r.blob());
       const file = new File([blob], "cropped.png", { type: "image/png" });
 
       window.dispatchEvent(
@@ -123,6 +125,8 @@ export default function ImageEditor({ selectedImage }) {
           detail: { file, thumbnail: croppedBase64 },
         })
       );
+
+      onProcessComplete?.(croppedUrl);
 
       alert("크롭 완료!");
     } catch (err) {
@@ -149,7 +153,8 @@ export default function ImageEditor({ selectedImage }) {
       ctx.drawImage(image, 0, 0);
 
       const denoisedBase64 = canvas.toDataURL("image/png").split(",")[1];
-      const blob = await fetch(canvas.toDataURL("image/png")).then((r) => r.blob());
+      const denoisedUrl = `data:image/png;base64,${denoisedBase64}`;
+      const blob = await fetch(denoisedUrl).then((r) => r.blob());
       const file = new File([blob], "denoised.png", { type: "image/png" });
 
       window.dispatchEvent(
@@ -157,6 +162,8 @@ export default function ImageEditor({ selectedImage }) {
           detail: { file, thumbnail: denoisedBase64 },
         })
       );
+
+      onProcessComplete?.(denoisedUrl);
 
       alert("노이즈 제거 완료!");
     } catch (err) {
@@ -171,7 +178,7 @@ export default function ImageEditor({ selectedImage }) {
         <button className="btn" disabled={!selectedImage} onClick={removeBackgroundOnly}>
           배경제거
         </button>
-        <button className="btn" disabled={!selectedImage} onClick={removeBackground}>
+        <button className="btn" disabled={!selectedImage} onClick={removeBackgroundAndCrop}>
           배경제거 + 크롭
         </button>
         <button className="btn" disabled={!selectedImage} onClick={() => cropLocally()}>
