@@ -22,11 +22,11 @@ export const onRequestPost = async ({ request }) => {
       maxX = 0,
       maxY = 0;
 
-    // ✅ 픽셀 탐색 (투명도 낮은 외곽도 포함하도록 완화)
+    // ✅ 투명도 감지 완화 (피사체 외곽 픽셀 최대한 포함)
     for (let y = 0; y < canvas.height; y++) {
       for (let x = 0; x < canvas.width; x++) {
         const alpha = imgData[(y * canvas.width + x) * 4 + 3];
-        if (alpha > 3) { // 🔹기존 10 → 3으로 완화
+        if (alpha > 1) { // 🔹기존 3 → 1로 완화: 거의 투명한 픽셀도 포함
           if (x < minX) minX = x;
           if (y < minY) minY = y;
           if (x > maxX) maxX = x;
@@ -35,9 +35,9 @@ export const onRequestPost = async ({ request }) => {
       }
     }
 
-    // ✅ 사방 여백 최소화 (padding 거의 제거)
-    const paddingX = Math.floor((maxX - minX) * 0.01); // 🔹1%만 남김
-    const paddingY = Math.floor((maxY - minY) * 0.01);
+    // ✅ padding 늘려서 잘림 방지 (사방 2.5% 여백)
+    const paddingX = Math.floor((maxX - minX) * 0.025);
+    const paddingY = Math.floor((maxY - minY) * 0.025);
     minX = Math.max(0, minX - paddingX);
     minY = Math.max(0, minY - paddingY);
     maxX = Math.min(canvas.width, maxX + paddingX);
@@ -50,7 +50,7 @@ export const onRequestPost = async ({ request }) => {
     const croppedCtx = croppedCanvas.getContext("2d");
     croppedCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
 
-    // ✅ Base64로 반환
+    // ✅ Base64 반환
     const croppedBlob = await croppedCanvas.convertToBlob({ type: "image/png" });
     const base64 = Buffer.from(await croppedBlob.arrayBuffer()).toString("base64");
 
