@@ -1,4 +1,4 @@
- export const onRequestPost = async ({ request, env }) => {
+export const onRequestPost = async ({ request, env }) => {
   try {
     const apiKey = env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("OPENAI_API_KEY 누락");
@@ -17,7 +17,7 @@
 
     for (const [i, img64] of imageBase64List.entries()) {
       const payload = {
-        model: "gpt-4o-mini", // Responses API에 최적화된 모델
+        model: "gpt-4o-mini",
         input: [
           {
             role: "system",
@@ -40,12 +40,11 @@
             ],
           },
         ],
-        // ✅ 최신 사양: text.format 지정
-        response: {
-          modalities: ["text"],
-          text: {
-            format: "json",
-          },
+
+        // ✅ 최신 사양으로 변경됨
+        response_spec: {
+          modality: "text",
+          text_format: "json",
         },
       };
 
