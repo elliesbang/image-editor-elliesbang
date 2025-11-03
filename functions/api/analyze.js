@@ -39,7 +39,7 @@ export const onRequestPost = async ({ request, env }) => {
             ],
           },
         ],
-        response_format: { type: "json_object" }, // ✅ 최신 스펙
+        text: { format: "json_object" },
       };
 
       const res = await fetch("https://api.openai.com/v1/responses", {
