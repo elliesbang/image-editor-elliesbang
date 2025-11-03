@@ -15,40 +15,30 @@ export const onRequestPost = async ({ request }) => {
       );
     }
 
-    // ✅ Blob → ArrayBuffer → Base64 변환
-    const buffer = await imageFile.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    const base64 = btoa(String.fromCharCode(...bytes));
-    const imageUrl = `data:image/png;base64,${base64}`;
+    // ✅ 이미지 ArrayBuffer → Blob → ImageBitmap
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const imageBitmap = await createImageBitmap(
+      new Blob([arrayBuffer], { type: imageFile.type || "image/png" })
+    );
 
-    // ✅ Cloudflare 환경에서 Image 객체 생성
-    const image = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("이미지 로드 실패"));
-      img.src = imageUrl;
-    });
-
-    // ✅ 리사이즈 비율 계산
-    const aspect = image.width / image.height;
+    const aspect = imageBitmap.width / imageBitmap.height;
     const newW = width;
     const newH = keepAspect ? Math.round(width / aspect) : width;
 
-    // ✅ OffscreenCanvas로 리사이즈 처리
+    // ✅ OffscreenCanvas 기반 리사이즈
     const canvas = new OffscreenCanvas(newW, newH);
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(image, 0, 0, newW, newH);
+    ctx.drawImage(imageBitmap, 0, 0, newW, newH);
 
-    // ✅ PNG Base64 변환
-    const blob = await canvas.convertToBlob({ type: "image/png" });
-    const resizedBuffer = await blob.arrayBuffer();
-    const resizedBase64 = btoa(
-      String.fromCharCode(...new Uint8Array(resizedBuffer))
-    );
+    // ✅ Blob → ArrayBuffer → Base64 (안정적 변환)
+    const resizedBlob = await canvas.convertToBlob({ type: "image/png" });
+    const resizedBuffer = await resizedBlob.arrayBuffer();
 
-    // ✅ 응답 반환
+    // 👉 여기 핵심: Buffer.from() 사용 (Cloudflare 호환)
+    const base64 = Buffer.from(resizedBuffer).toString("base64");
+
     return new Response(
-      JSON.stringify({ success: true, result: resizedBase64 }),
+      JSON.stringify({ success: true, result: base64 }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
