@@ -10,17 +10,14 @@ export default function AdditionalEditor({ selectedImage }) {
   const getCurrentImage = () => {
     if (!selectedImage) return null;
 
-    // File 객체
     if (selectedImage instanceof File) return selectedImage;
 
-    // 객체 형태 ({ file, thumbnail })
     if (typeof selectedImage === "object") {
       if (selectedImage.file instanceof File) return selectedImage.file;
       if (selectedImage.thumbnail)
         return `data:image/png;base64,${selectedImage.thumbnail}`;
     }
 
-    // 문자열 형태 (base64 or dataURL)
     if (typeof selectedImage === "string") {
       if (selectedImage.startsWith("data:image")) return selectedImage;
       return `data:image/png;base64,${selectedImage}`;
@@ -59,7 +56,6 @@ export default function AdditionalEditor({ selectedImage }) {
         formData.append("image", blob, "image.png");
       }
 
-      // 추가 파라미터
       for (const [key, value] of Object.entries(extra)) {
         formData.append(key, value);
       }
@@ -133,12 +129,14 @@ export default function AdditionalEditor({ selectedImage }) {
     }
   };
 
+  // ✅ 키워드 복사
   const copyKeywords = () => {
     if (!keywords.length) return;
     navigator.clipboard.writeText(keywords.join(", "));
     alert("키워드가 복사되었습니다 ✅");
   };
 
+  // ✅ UI 시작
   return (
     <div className="tools-wrap">
       <h3>✨ 추가 기능</h3>
@@ -159,89 +157,87 @@ export default function AdditionalEditor({ selectedImage }) {
       </div>
 
       {/* 🔹 SVG 변환 */}
-     {/* 🔹 SVG 변환 */}
-<div className="tool-block">
-  <label>SVG 변환</label>
-  <select
-    className="input"
-    defaultValue="1"
-    id="svgColorSelect"
-    style={{ marginBottom: "8px" }}
-  >
-    <option value="1">단색 (1-color)</option>
-    <option value="2">2색 (2-color)</option>
-    <option value="3">3색 (3-color)</option>
-    <option value="4">4색 (4-color)</option>
-    <option value="5">5색 (5-color)</option>
-    <option value="6">6색 (6-color)</option>
-  </select>
+      <div className="tool-block">
+        <label>SVG 변환</label>
+        <select
+          className="input"
+          defaultValue="1"
+          id="svgColorSelect"
+          style={{ marginBottom: "8px" }}
+        >
+          <option value="1">단색 (1-color)</option>
+          <option value="2">2색 (2-color)</option>
+          <option value="3">3색 (3-color)</option>
+          <option value="4">4색 (4-color)</option>
+          <option value="5">5색 (5-color)</option>
+          <option value="6">6색 (6-color)</option>
+        </select>
 
-  <button
-    className="btn"
-    onClick={() => {
-      const colors = document.getElementById("svgColorSelect").value;
-      processImage("convert-svg", { colors });
-    }}
-    disabled={loading}
-  >
-    SVG 변환
-  </button>
-</div>
+        <button
+          className="btn"
+          onClick={() => {
+            const colors = document.getElementById("svgColorSelect").value;
+            processImage("convert-svg", { colors });
+          }}
+          disabled={loading}
+        >
+          SVG 변환
+        </button>
+      </div>
 
       {/* 🔹 GIF 변환 */}
-<div className="tool-block">
-  <label>GIF 변환</label>
-  <input
-    type="text"
-    id="gifCaption"
-    className="input"
-    placeholder="GIF에 표시할 설명 텍스트 입력"
-    style={{ marginBottom: "8px" }}
-  />
+      <div className="tool-block">
+        <label>GIF 변환</label>
+        <input
+          type="text"
+          id="gifCaption"
+          className="input"
+          placeholder="GIF에 표시할 설명 텍스트 입력"
+          style={{ marginBottom: "8px" }}
+        />
+        <button
+          className="btn"
+          onClick={() => {
+            const caption = document.getElementById("gifCaption").value.trim();
+            processImage("convert-gif", { caption });
+          }}
+          disabled={loading}
+        >
+          GIF 변환
+        </button>
+      </div>
 
-  <button
-    className="btn"
-    onClick={() => {
-      const caption = document.getElementById("gifCaption").value.trim();
-      processImage("convert-gif", { caption });
-    }}
-    disabled={loading}
-  >
-    GIF 변환
-  </button>
-</div>
-      
       {/* 🔹 키워드 분석 */}
-<div className="tool-block">
-  <label>키워드 분석</label>
-  <textarea
-    id="analyzeDesc"
-    className="input"
-    rows="2"
-    placeholder="이미지 설명(선택 사항)"
-    style={{ marginBottom: "8px" }}
-  ></textarea>
+      <div className="tool-block">
+        <label>키워드 분석</label>
+        <textarea
+          id="analyzeDesc"
+          className="input"
+          rows="2"
+          placeholder="이미지 설명(선택 사항)"
+          style={{ marginBottom: "8px" }}
+        ></textarea>
 
-  <button
-    className="btn"
-    onClick={async () => {
-      const desc = document.getElementById("analyzeDesc").value;
-      await handleAnalyze(desc);
-    }}
-    disabled={loading}
-  >
-    {loading ? "분석 중..." : "키워드 분석"}
-  </button>
+        <button
+          className="btn"
+          onClick={async () => {
+            const desc = document.getElementById("analyzeDesc").value;
+            await handleAnalyze(desc);
+          }}
+          disabled={loading}
+        >
+          {loading ? "분석 중..." : "키워드 분석"}
+        </button>
 
-  {keywords.length > 0 && (
-    <div className="keyword-result">
-      <p>{keywords.join(", ")}</p>
-      <button className="copy-btn" onClick={copyKeywords}>
-        복사
-      </button>
+        {keywords.length > 0 && (
+          <div className="keyword-result">
+            <p>{keywords.join(", ")}</p>
+            <button className="copy-btn" onClick={copyKeywords}>
+              복사
+            </button>
+          </div>
+        )}
+      </div>
     </div>
-  )}
-     </div> {/* 키워드 분석 블록 닫힘 */}
-  </div>   {/* tools-wrap 닫힘 */}
   );
 }
