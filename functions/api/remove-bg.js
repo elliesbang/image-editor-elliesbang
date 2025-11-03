@@ -11,9 +11,9 @@ export const onRequestPost = async ({ request, env }) => {
     }
 
     const apiKey = env.HF_API_KEY;
-    const model = "briaai/RMBG-1.4"; // ✅ 배경제거 모델 이름
+    const model = "briaai/RMBG-1.4"; // ✅ 최신 배경제거 모델
 
-    // ✅ 새로운 Hugging Face 엔드포인트 사용
+    // ✅ Hugging Face 최신 라우터 엔드포인트
     const response = await fetch(
       `https://router.huggingface.co/hf-inference/models/${model}`,
       {
@@ -21,16 +21,17 @@ export const onRequestPost = async ({ request, env }) => {
         headers: {
           Authorization: `Bearer ${apiKey}`,
         },
-        body: imageFile,
+        body: imageFile, // ✅ multipart/form-data ❌ → Blob 직접 전송 ✅
       }
     );
 
     if (!response.ok) {
-      throw new Error(`배경제거 실패 (${response.status})`);
+      const text = await response.text();
+      throw new Error(`배경제거 실패 (${response.status}): ${text}`);
     }
 
-    const blob = await response.blob();
-    const arrayBuffer = await blob.arrayBuffer();
+    // ✅ 결과 이미지 base64 인코딩
+    const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
 
     return new Response(JSON.stringify({ result: base64 }), {
