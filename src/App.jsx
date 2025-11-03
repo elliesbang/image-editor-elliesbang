@@ -11,6 +11,7 @@ import "./App.css";
 function App() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
   const [selectedResult, setSelectedResult] = useState(null);
   const [loginOpen, setLoginOpen] = useState(false);
 
@@ -34,6 +35,8 @@ function App() {
             onImagesUploaded={handleImagesUploaded}
             selectedImage={selectedImage}
             setSelectedImage={setSelectedImage}
+            selectedImages={selectedImages}
+            setSelectedImages={setSelectedImages}
           />
         </section>
 
@@ -64,6 +67,8 @@ function App() {
           <AdditionalEditor
             selectedUploadImage={selectedImage}
             selectedResultImage={selectedResult}
+            selectedImages={selectedImages}
+            setSelectedImages={setSelectedImages}
           />
         </section>
       </main>

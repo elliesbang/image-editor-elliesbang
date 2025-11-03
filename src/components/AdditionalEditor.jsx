@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from "react";
 
-export default function AdditionalEditor({ selectedImage }) {
+export default function AdditionalEditor({
+  selectedImage,
+  selectedImages,
+  setSelectedImages,
+}) {
   const [resizeW, setResizeW] = useState("");
   const [resizeH, setResizeH] = useState("");
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const syncedSelectedImage =
+    Array.isArray(selectedImages) && selectedImages.includes(selectedImage)
+      ? selectedImages[selectedImages.indexOf(selectedImage)]
+      : selectedImage;
+
   // ✅ 이미지 안정적으로 가져오기 (객체, File, base64 모두 인식)
   const getCurrentImage = () => {
-    if (!selectedImage) return null;
+    if (!syncedSelectedImage) return null;
 
-    if (selectedImage instanceof File) return selectedImage;
+    if (syncedSelectedImage instanceof File) return syncedSelectedImage;
 
-    if (typeof selectedImage === "object") {
-      if (selectedImage.file instanceof File) return selectedImage.file;
-      if (selectedImage.thumbnail)
-        return `data:image/png;base64,${selectedImage.thumbnail}`;
+    if (typeof syncedSelectedImage === "object") {
+      if (syncedSelectedImage.file instanceof File) return syncedSelectedImage.file;
+      if (syncedSelectedImage.thumbnail)
+        return `data:image/png;base64,${syncedSelectedImage.thumbnail}`;
     }
 
-    if (typeof selectedImage === "string") {
-      if (selectedImage.startsWith("data:image")) return selectedImage;
-      return `data:image/png;base64,${selectedImage}`;
+    if (typeof syncedSelectedImage === "string") {
+      if (syncedSelectedImage.startsWith("data:image")) return syncedSelectedImage;
+      return `data:image/png;base64,${syncedSelectedImage}`;
     }
 
     return null;
@@ -76,6 +85,10 @@ export default function AdditionalEditor({ selectedImage }) {
           detail: { file, thumbnail: data.result },
         })
       );
+
+      if (setSelectedImages) {
+        setSelectedImages((prev) => prev);
+      }
 
       alert(`${endpoint} 완료!`);
     } catch (err) {

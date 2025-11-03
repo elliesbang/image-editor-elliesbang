@@ -1,8 +1,13 @@
 import React, { useState } from "react";
 
-const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
+const ImageUpload = ({
+  onImagesUploaded,
+  selectedImage,
+  setSelectedImage,
+  selectedImages,
+  setSelectedImages,
+}) => {
   const [images, setImages] = useState([]);
-  const [selectedImages, setSelectedImages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
 
   // ✅ 이미지 업로드 (50장 제한)
