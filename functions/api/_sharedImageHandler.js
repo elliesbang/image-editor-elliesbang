@@ -1,17 +1,21 @@
 // ✅ 이미지 입력(JSON or FormData) 자동 파싱 공용 함수
 export async function parseImageInput(request) {
   const contentType = request.headers.get("content-type") || "";
+  // ✅ 일부 브라우저에서 multipart/form-data; boundary=... 로 들어오므로 소문자 변환
+  const lowerType = contentType.toLowerCase();
   let imageBase64 = null;
 
   try {
     // ✅ JSON 요청 (application/json)
-    if (contentType.includes("application/json")) {
+    if (lowerType.includes("application/json")) {
       const body = await request.json();
-      imageBase64 = body?.imageBase64 || null;
+      imageBase64 =
+        (body?.imageBase64 || "").replace(/^data:image\/(png|jpeg|jpg);base64,/, "") ||
+        null;
     }
 
     // ✅ 파일 업로드 요청 (multipart/form-data)
-    else if (contentType.includes("multipart/form-data")) {
+    else if (lowerType.includes("multipart/form-data")) {
       const formData = await request.formData();
       const file = formData.get("image");
       if (file) {
