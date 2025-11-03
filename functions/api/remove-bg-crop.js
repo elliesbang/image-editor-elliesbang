@@ -25,21 +25,19 @@ export const onRequestPost = async ({ request, env }) => {
       }
     );
 
-    if (!removeRes.ok) throw new Error(`배경제거 실패 (${removeRes.status})`);
+    if (!removeRes.ok) {
+      throw new Error(`배경제거 실패 (${removeRes.status})`);
+    }
 
     const buffer = Buffer.from(await removeRes.arrayBuffer());
 
-    // ✅ 2️⃣ Sharp로 자동 바운딩박스 감지 및 크롭
-    const img = sharp(buffer);
-    const metadata = await img.metadata();
-
-    // 알파 채널 감지 후 투명 영역 제거
-    const croppedBuffer = await img
-      .trim({ threshold: 10 }) // 투명영역 감지 민감도
+    // ✅ 2️⃣ Sharp로 피사체 경계 감지 후 여백 없이 크롭
+    const trimmedBuffer = await sharp(buffer)
+      .trim({ threshold: 10 }) // 투명 픽셀 기반 여백 제거
       .toBuffer();
 
     // ✅ 3️⃣ base64 변환
-    const base64 = croppedBuffer.toString("base64");
+    const base64 = trimmedBuffer.toString("base64");
 
     return new Response(JSON.stringify({ result: base64 }), {
       headers: { "Content-Type": "application/json" },
