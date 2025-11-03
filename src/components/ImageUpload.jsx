@@ -26,18 +26,26 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
   // ✅ 드래그 & 드롭 (수정된 부분)
   const handleDrop = (e) => {
     e.preventDefault();
-    e.stopPropagation(); // ✅ 브라우저 기본 이벤트 방지
+    e.stopPropagation();
     setIsDragging(false);
 
     const { files } = e.dataTransfer;
     if (files && files.length > 0) {
       handleImageUpload(files);
+      e.dataTransfer.clearData(); // ✅ 브라우저 기본 drag data 초기화
     }
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true); // ✅ dragenter 추가
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.stopPropagation(); // ✅ 브라우저가 파일을 열지 않도록
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy"; // ✅ 드롭 가능 표시
     setIsDragging(true);
   };
 
@@ -69,6 +77,7 @@ const ImageUpload = ({ onImagesUploaded, selectedImage, setSelectedImage }) => {
   return (
     <div
       className={`upload-section ${isDragging ? "dragging" : ""}`}
+      onDragEnter={handleDragEnter}   {/* ✅ 추가 */}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
