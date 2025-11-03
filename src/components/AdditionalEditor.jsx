@@ -159,45 +159,86 @@ export default function AdditionalEditor({ selectedImage }) {
       </div>
 
       {/* 🔹 SVG 변환 */}
-      <div className="tool-row">
-        <label>SVG 변환</label>
-        <button
-          className="btn"
-          onClick={() => processImage("convert-svg")}
-          disabled={loading}
-        >
-          SVG 변환
-        </button>
-      </div>
+     {/* 🔹 SVG 변환 */}
+<div className="tool-block">
+  <label>SVG 변환</label>
+  <select
+    className="input"
+    defaultValue="1"
+    id="svgColorSelect"
+    style={{ marginBottom: "8px" }}
+  >
+    <option value="1">단색 (1-color)</option>
+    <option value="2">2색 (2-color)</option>
+    <option value="3">3색 (3-color)</option>
+    <option value="4">4색 (4-color)</option>
+    <option value="5">5색 (5-color)</option>
+    <option value="6">6색 (6-color)</option>
+  </select>
+
+  <button
+    className="btn"
+    onClick={() => {
+      const colors = document.getElementById("svgColorSelect").value;
+      processImage("convert-svg", { colors });
+    }}
+    disabled={loading}
+  >
+    SVG 변환
+  </button>
+</div>
 
       {/* 🔹 GIF 변환 */}
-      <div className="tool-row">
-        <label>GIF 변환</label>
-        <button
-          className="btn"
-          onClick={() => processImage("convert-gif")}
-          disabled={loading}
-        >
-          GIF 변환
-        </button>
-      </div>
+<div className="tool-block">
+  <label>GIF 변환</label>
+  <input
+    type="text"
+    id="gifCaption"
+    className="input"
+    placeholder="GIF에 표시할 설명 텍스트 입력"
+    style={{ marginBottom: "8px" }}
+  />
 
+  <button
+    className="btn"
+    onClick={() => {
+      const caption = document.getElementById("gifCaption").value.trim();
+      processImage("convert-gif", { caption });
+    }}
+    disabled={loading}
+  >
+    GIF 변환
+  </button>
+</div>
+      
       {/* 🔹 키워드 분석 */}
-      <div className="tool-row">
-        <label>키워드 분석</label>
-        <button className="btn" onClick={handleAnalyze} disabled={loading}>
-          키워드 분석
-        </button>
+<div className="tool-block">
+  <label>키워드 분석</label>
+  <textarea
+    id="analyzeDesc"
+    className="input"
+    rows="2"
+    placeholder="이미지 설명(선택 사항)"
+    style={{ marginBottom: "8px" }}
+  ></textarea>
 
-        {keywords.length > 0 && (
-          <div className="keyword-box">
-            <p className="keyword-text">{keywords.join(", ")}</p>
-            <button className="copy-btn" onClick={copyKeywords}>
-              복사
-            </button>
-          </div>
-        )}
-      </div>
+  <button
+    className="btn"
+    onClick={async () => {
+      const desc = document.getElementById("analyzeDesc").value;
+      await handleAnalyze(desc);
+    }}
+    disabled={loading}
+  >
+    {loading ? "분석 중..." : "키워드 분석"}
+  </button>
+
+  {keywords.length > 0 && (
+    <div className="keyword-result">
+      <p>{keywords.join(", ")}</p>
+      <button className="copy-btn" onClick={copyKeywords}>
+        복사
+      </button>
     </div>
-  );
-}
+  )}
+</div>
