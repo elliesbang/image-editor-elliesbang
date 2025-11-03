@@ -8,10 +8,12 @@ export default function RemoveBgCropButton({ selectedImage, disabled }) {
 
     try {
       const blob = await fetch(imgSrc).then((r) => r.blob());
-      const binary = new Uint8Array(await blob.arrayBuffer());
+      const formData = new FormData();
+      formData.append("image", blob, "image.png");
+
       const res = await fetch("/api/remove-bg-crop", {
         method: "POST",
-        body: binary,
+        body: formData,
       });
 
       const data = await res.json();
