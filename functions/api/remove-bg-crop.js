@@ -1,78 +1,54 @@
+import sharp from "sharp";
+
 export const onRequestPost = async ({ request, env }) => {
   try {
-    // ✅ 1. 이미지 파일 받기
     const formData = await request.formData();
-    const imageFile = formData.get("image");
+    const imageFile = formData.get("file");
 
     if (!imageFile) {
       return new Response(
-        JSON.stringify({ error: "이미지가 없습니다." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "이미지 파일이 없습니다." }),
+        { status: 400 }
       );
     }
 
-    // ✅ 2. 파일 → 바이트 배열 변환
-    const buffer = await imageFile.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
+    const apiKey = env.HF_API_KEY;
+    const model = "briaai/RMBG-1.4";
 
-    // ✅ 3. 새로운 Hugging Face Inference Providers 엔드포인트로 배경제거 요청
-    const bgRes = await fetch(
-      // ✅ 최신 라우터 주소 (2025년 기준)
-      "https://router.huggingface.co/hf-inference/models/Sanster/lama-cleaner",
+    // ✅ 1️⃣ 배경제거 (Hugging Face 최신 엔드포인트)
+    const removeRes = await fetch(
+      `https://router.huggingface.co/hf-inference/models/${model}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.HUGGINGFACE_API_KEY}`,
-          "Content-Type": "application/octet-stream",
-        },
-        body: bytes,
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: imageFile,
       }
     );
 
-    if (!bgRes.ok) {
-      const errText = await bgRes.text();
-      throw new Error(`배경제거 실패 (HTTP ${bgRes.status}) - ${errText}`);
-    }
+    if (!removeRes.ok) throw new Error(`배경제거 실패 (${removeRes.status})`);
 
-    const bgBuffer = await bgRes.arrayBuffer();
+    const buffer = Buffer.from(await removeRes.arrayBuffer());
 
-    // ✅ 4. 크롭 처리 (Cloudflare Workers 환경에서는 OffscreenCanvas 사용 가능)
-    const blob = new Blob([bgBuffer]);
-    const imageBitmap = await createImageBitmap(blob);
-    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(imageBitmap, 0, 0);
+    // ✅ 2️⃣ Sharp로 자동 바운딩박스 감지 및 크롭
+    const img = sharp(buffer);
+    const metadata = await img.metadata();
 
-    // ✅ 중앙 기준 정사각 크롭
-    const cropSize = Math.min(imageBitmap.width, imageBitmap.height);
-    const sx = (imageBitmap.width - cropSize) / 2;
-    const sy = (imageBitmap.height - cropSize) / 2;
+    // 알파 채널 감지 후 투명 영역 제거
+    const croppedBuffer = await img
+      .trim({ threshold: 10 }) // 투명영역 감지 민감도
+      .toBuffer();
 
-    const cropped = ctx.getImageData(sx, sy, cropSize, cropSize);
-    const canvasCrop = new OffscreenCanvas(cropSize, cropSize);
-    const ctxCrop = canvasCrop.getContext("2d");
-    ctxCrop.putImageData(cropped, 0, 0);
+    // ✅ 3️⃣ base64 변환
+    const base64 = croppedBuffer.toString("base64");
 
-    // ✅ PNG로 변환 → Base64 인코딩
-    const croppedBlob = await canvasCrop.convertToBlob({ type: "image/png" });
-    const croppedBuffer = await croppedBlob.arrayBuffer();
-    const base64 = btoa(
-      String.fromCharCode(...new Uint8Array(croppedBuffer))
-    );
-
-    // ✅ 최종 응답
-    return new Response(
-      JSON.stringify({ success: true, result: base64 }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ result: base64 }), {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err) {
     console.error("🚨 remove-bg-crop 오류:", err);
     return new Response(
-      JSON.stringify({ success: false, error: err.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: "배경제거+크롭 실패", detail: err.message }),
+      { status: 500 }
     );
   }
 };
