@@ -3,24 +3,33 @@ import React, { useState, useEffect } from "react";
 export default function AdditionalEditor({ selectedImage }) {
   const [resizeW, setResizeW] = useState("");
   const [resizeH, setResizeH] = useState("");
-  const [aspectRatio, setAspectRatio] = useState(null);
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [imageData, setImageData] = useState(null);
 
-  // ✅ 추가: SVG 색상 수, GIF 설명
-  const [svgColors, setSvgColors] = useState("1");
-  const [gifDesc, setGifDesc] = useState("");
+  // ✅ 이미지 안정적으로 가져오기 (객체, File, base64 모두 인식)
+  const getCurrentImage = () => {
+    if (!selectedImage) return null;
 
-  // ✅ 선택된 이미지 반영
-  useEffect(() => {
-    if (!selectedImage) return;
-    if (selectedImage.file instanceof File) setImageData(selectedImage.file);
-    else if (selectedImage.thumbnail) setImageData(selectedImage.thumbnail);
-    else if (typeof selectedImage === "string") setImageData(selectedImage);
-  }, [selectedImage]);
+    // File 객체
+    if (selectedImage instanceof File) return selectedImage;
 
-  // ✅ base64 변환
+    // 객체 형태 ({ file, thumbnail })
+    if (typeof selectedImage === "object") {
+      if (selectedImage.file instanceof File) return selectedImage.file;
+      if (selectedImage.thumbnail)
+        return `data:image/png;base64,${selectedImage.thumbnail}`;
+    }
+
+    // 문자열 형태 (base64 or dataURL)
+    if (typeof selectedImage === "string") {
+      if (selectedImage.startsWith("data:image")) return selectedImage;
+      return `data:image/png;base64,${selectedImage}`;
+    }
+
+    return null;
+  };
+
+  // ✅ base64 변환 유틸
   const blobToBase64 = (blob) =>
     new Promise((resolve) => {
       const reader = new FileReader();
@@ -28,18 +37,19 @@ export default function AdditionalEditor({ selectedImage }) {
       reader.readAsDataURL(blob);
     });
 
-  // ✅ 공용 API 호출
+  // ✅ 공용 이미지 처리 함수
   const processImage = async (endpoint, extra = {}) => {
-    if (!imageData) return alert("이미지를 먼저 선택해주세요!");
+    const currentImage = getCurrentImage();
+    if (!currentImage) return alert("이미지를 먼저 선택하세요!");
     setLoading(true);
 
     try {
       const formData = new FormData();
 
-      if (imageData instanceof File) {
-        formData.append("image", imageData);
-      } else if (typeof imageData === "string") {
-        const cleanBase64 = imageData.replace(/^data:image\/(png|jpeg);base64,/, "");
+      if (currentImage instanceof File) {
+        formData.append("image", currentImage);
+      } else if (typeof currentImage === "string") {
+        const cleanBase64 = currentImage.replace(/^data:image\/(png|jpeg);base64,/, "");
         const byteCharacters = atob(cleanBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -49,11 +59,17 @@ export default function AdditionalEditor({ selectedImage }) {
         formData.append("image", blob, "image.png");
       }
 
-      for (const [k, v] of Object.entries(extra)) formData.append(k, v);
+      // 추가 파라미터
+      for (const [key, value] of Object.entries(extra)) {
+        formData.append(key, value);
+      }
 
-      const res = await fetch(`/api/${endpoint}`, { method: "POST", body: formData });
+      const res = await fetch(`/api/${endpoint}`, {
+        method: "POST",
+        body: formData,
+      });
+
       const data = await res.json();
-
       if (!res.ok || !data.result) throw new Error(`${endpoint} 실패`);
 
       const blob = await fetch(`data:image/png;base64,${data.result}`).then((r) => r.blob());
@@ -64,6 +80,7 @@ export default function AdditionalEditor({ selectedImage }) {
           detail: { file, thumbnail: data.result },
         })
       );
+
       alert(`${endpoint} 완료!`);
     } catch (err) {
       console.error(`${endpoint} 오류:`, err);
@@ -75,38 +92,28 @@ export default function AdditionalEditor({ selectedImage }) {
 
   // ✅ 리사이즈
   const handleResize = async () => {
-    if (!imageData) return alert("이미지를 먼저 선택해주세요!");
+    const currentImage = getCurrentImage();
+    if (!currentImage) return alert("이미지를 먼저 선택하세요!");
     if (!resizeW) return alert("가로(px)를 입력하세요!");
-
-    let width = parseInt(resizeW, 10);
-    let height = resizeH;
-
-    if (aspectRatio && !resizeH) {
-      height = Math.round(width / aspectRatio);
-    }
-
-    await processImage("resize", { width, height });
+    await processImage("resize", { width: resizeW });
   };
-
-  // ✅ 비율 계산
-  useEffect(() => {
-    if (imageData instanceof File) {
-      const img = new Image();
-      img.onload = () => setAspectRatio(img.width / img.height);
-      img.src = URL.createObjectURL(imageData);
-    }
-  }, [imageData]);
 
   // ✅ 키워드 분석
   const handleAnalyze = async () => {
-    if (!imageData) return alert("이미지를 먼저 선택해주세요!");
+    const currentImage = getCurrentImage();
+    if (!currentImage) return alert("이미지를 먼저 선택하세요!");
     setLoading(true);
 
     try {
       const blob =
-        imageData instanceof File
-          ? imageData
-          : await fetch(`data:image/png;base64,${imageData}`).then((r) => r.blob());
+        currentImage instanceof File
+          ? currentImage
+          : await fetch(
+              currentImage.startsWith("data:image")
+                ? currentImage
+                : `data:image/png;base64,${currentImage}`
+            ).then((r) => r.blob());
+
       const base64 = await blobToBase64(blob);
 
       const res = await fetch("/api/analyze", {
@@ -126,7 +133,6 @@ export default function AdditionalEditor({ selectedImage }) {
     }
   };
 
-  // ✅ 키워드 복사
   const copyKeywords = () => {
     if (!keywords.length) return;
     navigator.clipboard.writeText(keywords.join(", "));
@@ -135,59 +141,41 @@ export default function AdditionalEditor({ selectedImage }) {
 
   return (
     <div className="tools-wrap">
-      <h3>🧩 추가 기능</h3>
+      <h3>✨ 추가 기능</h3>
 
       {/* 🔹 리사이즈 */}
-      <div className="tool-block">
-        <label>가로(px)</label>
+      <div className="tool-row">
+        <label>리사이즈</label>
         <input
           type="number"
           className="input"
-          placeholder="예: 800"
+          placeholder="가로(px)"
           value={resizeW}
           onChange={(e) => setResizeW(e.target.value)}
         />
         <button className="btn" onClick={handleResize} disabled={loading}>
-          자동 리사이즈
+          리사이즈 실행
         </button>
       </div>
 
-      {/* 🔹 SVG 변환 (색상 선택 추가) */}
-      <div className="tool-block">
+      {/* 🔹 SVG 변환 */}
+      <div className="tool-row">
         <label>SVG 변환</label>
-        <select
-          className="input"
-          value={svgColors}
-          onChange={(e) => setSvgColors(e.target.value)}
-        >
-          <option value="1">단색</option>
-          <option value="2">2색</option>
-          <option value="3">3색</option>
-          <option value="4">4색</option>
-          <option value="5">5색</option>
-          <option value="6">6색</option>
-        </select>
         <button
           className="btn"
-          onClick={() => processImage("convert-svg", { colors: svgColors })}
+          onClick={() => processImage("convert-svg")}
           disabled={loading}
         >
           SVG 변환
         </button>
       </div>
 
-      {/* 🔹 GIF 변환 (설명 입력 추가) */}
-      <div className="tool-block">
+      {/* 🔹 GIF 변환 */}
+      <div className="tool-row">
         <label>GIF 변환</label>
-        <textarea
-          className="input"
-          placeholder="GIF 동작 설명을 입력하세요"
-          value={gifDesc}
-          onChange={(e) => setGifDesc(e.target.value)}
-        />
         <button
           className="btn"
-          onClick={() => processImage("convert-gif", { desc: gifDesc })}
+          onClick={() => processImage("convert-gif")}
           disabled={loading}
         >
           GIF 변환
@@ -195,22 +183,19 @@ export default function AdditionalEditor({ selectedImage }) {
       </div>
 
       {/* 🔹 키워드 분석 */}
-      <div className="tool-block">
+      <div className="tool-row">
         <label>키워드 분석</label>
         <button className="btn" onClick={handleAnalyze} disabled={loading}>
-          {loading ? "분석 중..." : "키워드 분석"}
+          키워드 분석
         </button>
 
-        <textarea
-          className="input"
-          value={keywords.join(", ")}
-          readOnly
-          placeholder="분석 결과가 여기에 표시됩니다."
-        />
         {keywords.length > 0 && (
-          <button className="btn" onClick={copyKeywords}>
-            복사
-          </button>
+          <div className="keyword-box">
+            <p className="keyword-text">{keywords.join(", ")}</p>
+            <button className="copy-btn" onClick={copyKeywords}>
+              복사
+            </button>
+          </div>
         )}
       </div>
     </div>
