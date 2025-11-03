@@ -17,8 +17,8 @@ export const onRequestPost = async ({ request, env }) => {
 
     // ✅ 3. 새로운 Hugging Face Inference Providers 엔드포인트로 배경제거 요청
     const bgRes = await fetch(
-      // 🔁 여기를 최신 라우터 주소로 변경
-      "https://router.huggingface.co/models/Sanster/lama-cleaner",
+      // ✅ 최신 라우터 주소 (2025년 기준)
+      "https://router.huggingface.co/hf-inference/models/Sanster/lama-cleaner",
       {
         method: "POST",
         headers: {
