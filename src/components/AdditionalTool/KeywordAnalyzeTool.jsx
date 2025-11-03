@@ -10,11 +10,15 @@ export default function KeywordAnalyzeTool({
   const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
 
-  const activeImage = selectedResultImage || selectedUploadImage || selectedImage || (Array.isArray(selectedImages) && selectedImages[0]);
+  const activeImage =
+    selectedResultImage ||
+    selectedUploadImage ||
+    selectedImage ||
+    (Array.isArray(selectedImages) && selectedImages[0]);
   const hasActiveImage = Boolean(activeImage);
 
+  // ✅ 키워드 분석
   const handleAnalyze = async () => {
     const currentImage = getCurrentImage(activeImage);
     if (!currentImage) return alert("이미지를 먼저 선택하세요!");
@@ -24,7 +28,11 @@ export default function KeywordAnalyzeTool({
       const blob =
         currentImage instanceof File
           ? currentImage
-          : await fetch(currentImage.startsWith("data:image") ? currentImage : `data:image/png;base64,${currentImage}`).then((r) => r.blob());
+          : await fetch(
+              currentImage.startsWith("data:image")
+                ? currentImage
+                : `data:image/png;base64,${currentImage}`
+            ).then((r) => r.blob());
 
       const base64 = await blobToBase64(blob);
 
@@ -38,7 +46,6 @@ export default function KeywordAnalyzeTool({
       if (data.success) {
         setKeywords(data.keywords || []);
         setTitle(data.title || "분석 결과");
-        setDesc(data.description || "");
       } else throw new Error("분석 실패");
     } catch (err) {
       console.error("분석 오류:", err);
@@ -48,10 +55,11 @@ export default function KeywordAnalyzeTool({
     }
   };
 
-  const copyKeywords = () => {
-    if (!keywords.length) return;
-    navigator.clipboard.writeText(keywords.join(", "));
-    alert("키워드가 복사되었습니다 ✅");
+  // ✅ 복사 기능
+  const copyText = (text, type) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    alert(`${type}이(가) 복사되었습니다 ✅`);
   };
 
   return (
@@ -63,12 +71,31 @@ export default function KeywordAnalyzeTool({
 
       {keywords.length > 0 && (
         <div className="keyword-result">
-          <h4>{title}</h4>
-          <p>{keywords.join(", ")}</p>
-          <small>{desc}</small>
-          <button className="copy-btn" onClick={copyKeywords}>
-            복사
-          </button>
+          {/* 🔹 제목 */}
+          <div className="result-line">
+            <strong>제목:</strong>
+            <span>{title}</span>
+            <button
+              className="copy-btn"
+              title="제목 복사"
+              onClick={() => copyText(title, "제목")}
+            >
+              📋
+            </button>
+          </div>
+
+          {/* 🔹 키워드 */}
+          <div className="result-line">
+            <strong>키워드:</strong>
+            <span>{keywords.join(", ")}</span>
+            <button
+              className="copy-btn"
+              title="키워드 복사"
+              onClick={() => copyText(keywords.join(", "), "키워드")}
+            >
+              📋
+            </button>
+          </div>
         </div>
       )}
     </div>
