@@ -6,18 +6,15 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   const [selectedResults, setSelectedResults] = useState([]);
   const [localResults, setLocalResults] = useState(results);
 
-  // ✅ 리사이즈·배경제거 등 공통 처리 결과 자동 반영
+  // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈)
   useEffect(() => {
     const handleProcessed = (e) => {
       const { file, thumbnail, result } = e.detail;
-
-      // ✅ result나 thumbnail 중 하나라도 있으면 바로 반영
       const base64Data = result || thumbnail;
 
       if (base64Data) {
         setLocalResults((prev) => [...prev, base64Data]);
       } else if (file) {
-        // ✅ fallback: 파일만 있을 경우 FileReader로 변환
         const reader = new FileReader();
         reader.onload = () => {
           const base64 = reader.result.split(",")[1];
@@ -31,8 +28,13 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
     return () => window.removeEventListener("imageProcessed", handleProcessed);
   }, []);
 
-  // ✅ props로 받은 results도 동기화
+  // ✅ App에서 전달된 results 동기화
   useEffect(() => setLocalResults(results), [results]);
+
+  const getImageSrc = (img) => {
+    if (img.startsWith("data:image")) return img;
+    return `data:image/png;base64,${img}`;
+  };
 
   // ✅ 이미지 선택 / 해제
   const toggleSelect = (img) => {
@@ -42,7 +44,7 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
       if (setSelectedResult) setSelectedResult(null);
     } else {
       newSelection = [img];
-      if (setSelectedResult) setSelectedResult(img); // ✅ 선택 이미지 App으로 전달
+      if (setSelectedResult) setSelectedResult(getImageSrc(img));
     }
     setSelectedResults(newSelection);
   };
@@ -51,7 +53,7 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   const handleSelectAll = () => {
     setSelectedResults([...localResults]);
     if (setSelectedResult && localResults.length > 0) {
-      setSelectedResult(localResults[0]);
+      setSelectedResult(getImageSrc(localResults[0]));
     }
   };
 
@@ -71,7 +73,7 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
   // ✅ 개별 다운로드
   const handleDownload = (base64, index) => {
     const link = document.createElement("a");
-    link.href = `data:image/png;base64,${base64}`;
+    link.href = getImageSrc(base64);
     link.download = `result_${index + 1}.png`;
     link.click();
   };
@@ -82,7 +84,8 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
     const zip = new JSZip();
 
     localResults.forEach((base64, idx) => {
-      const byteCharacters = atob(base64);
+      const cleanBase64 = base64.replace(/^data:image\/png;base64,/, "");
+      const byteCharacters = atob(cleanBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -97,7 +100,7 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
 
   return (
     <div className="result-section">
-      {/* ✅ 3컬럼 버튼 */}
+      {/* ✅ 제어 버튼 */}
       {localResults.length > 0 && (
         <div className="control-buttons">
           <button onClick={handleSelectAll}>전체 선택</button>
@@ -119,11 +122,7 @@ export default function ProcessResult({ results = [], setSelectedResult }) {
               }`}
               onClick={() => toggleSelect(img)}
             >
-              <img
-                src={`data:image/png;base64,${img}`}
-                alt={`결과 ${idx + 1}`}
-                className="thumb"
-              />
+              <img src={getImageSrc(img)} alt={`결과 ${idx + 1}`} className="thumb" />
               <button
                 className="save-btn"
                 onClick={(e) => {
