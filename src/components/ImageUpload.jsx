@@ -30,7 +30,9 @@ const ImageUpload = ({
     setImages(updated);
     setSelectedImages(updated);
     if (newImages.length > 0) setSelectedImage(newImages[0]);
-    onImagesUploaded?.(newImages);
+
+    // ❌ 업로드 시 처리결과 섹션 자동 반영 방지
+    // onImagesUploaded?.(newImages);
   };
 
   // ✅ 파일 input 업로드
@@ -100,7 +102,6 @@ const ImageUpload = ({
 
   // ✅ images 변경 시 자동 정리
   useEffect(() => {
-    // 선택된 이미지가 실제 배열에 없으면 초기화
     if (selectedImage && !images.includes(selectedImage)) {
       setSelectedImage(null);
     }
