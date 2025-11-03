@@ -36,12 +36,43 @@ export default function ImageEditor({ selectedImage }) {
     }
   };
 
+  // ✅ 배경제거만 (크롭 없이)
+  const removeBackgroundOnly = async () => {
+    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
+    try {
+      const blob = await fetch(imgSrc).then((r) => r.blob());
+      const binary = new Uint8Array(await blob.arrayBuffer());
+      const res = await fetch("/api/remove-bg", {
+        method: "POST",
+        headers: {},
+        body: binary,
+      });
+
+      const data = await res.json();
+      if (!data.result) throw new Error("배경제거 실패");
+
+      const fileBlob = await fetch(`data:image/png;base64,${data.result}`).then((r) =>
+        r.blob()
+      );
+      const file = new File([fileBlob], "bg_removed.png", { type: "image/png" });
+
+      window.dispatchEvent(
+        new CustomEvent("imageProcessed", {
+          detail: { file, thumbnail: data.result },
+        })
+      );
+
+      alert("배경제거 완료!");
+    } catch (err) {
+      console.error("배경제거 오류:", err);
+      alert("배경제거 중 오류가 발생했습니다.");
+    }
+  };
+
   // ✅ 로컬 크롭
   const cropLocally = async (base64 = null) => {
     try {
-      const src = base64
-        ? `data:image/png;base64,${base64}`
-        : imgSrc;
+      const src = base64 ? `data:image/png;base64,${base64}` : imgSrc;
       const image = new Image();
       image.src = src;
       await new Promise((resolve) => (image.onload = resolve));
@@ -57,7 +88,17 @@ export default function ImageEditor({ selectedImage }) {
 
       canvas.width = cropWidth;
       canvas.height = cropHeight;
-      ctx.drawImage(image, startX, startY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      ctx.drawImage(
+        image,
+        startX,
+        startY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+      );
 
       const croppedBase64 = canvas.toDataURL("image/png").split(",")[1];
       const blob = await fetch(canvas.toDataURL("image/png")).then((r) => r.blob());
@@ -114,6 +155,9 @@ export default function ImageEditor({ selectedImage }) {
   return (
     <div className="editor-section">
       <div className="button-grid">
+        <button className="btn" disabled={!imgSrc} onClick={removeBackgroundOnly}>
+          배경제거
+        </button>
         <button className="btn" disabled={!imgSrc} onClick={removeBackground}>
           배경제거 + 크롭
         </button>
@@ -126,7 +170,14 @@ export default function ImageEditor({ selectedImage }) {
       </div>
 
       {!imgSrc && (
-        <p style={{ color: "#999", fontSize: "0.9rem", textAlign: "center", marginTop: "8px" }}>
+        <p
+          style={{
+            color: "#999",
+            fontSize: "0.9rem",
+            textAlign: "center",
+            marginTop: "8px",
+          }}
+        >
           이미지를 선택하면 버튼이 활성화됩니다.
         </p>
       )}
