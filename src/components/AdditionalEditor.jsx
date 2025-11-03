@@ -8,7 +8,11 @@ export default function AdditionalEditor({ selectedImage }) {
   const [loading, setLoading] = useState(false);
   const [imageData, setImageData] = useState(null);
 
-  // ✅ 선택된 이미지 즉시 반영
+  // ✅ 추가: SVG 색상 수, GIF 설명
+  const [svgColors, setSvgColors] = useState("1");
+  const [gifDesc, setGifDesc] = useState("");
+
+  // ✅ 선택된 이미지 반영
   useEffect(() => {
     if (!selectedImage) return;
     if (selectedImage.file instanceof File) setImageData(selectedImage.file);
@@ -69,7 +73,7 @@ export default function AdditionalEditor({ selectedImage }) {
     }
   };
 
-  // ✅ 리사이즈 (비율 자동 계산)
+  // ✅ 리사이즈
   const handleResize = async () => {
     if (!imageData) return alert("이미지를 먼저 선택해주세요!");
     if (!resizeW) return alert("가로(px)를 입력하세요!");
@@ -84,7 +88,7 @@ export default function AdditionalEditor({ selectedImage }) {
     await processImage("resize", { width, height });
   };
 
-  // ✅ 이미지 비율 계산 (자동 세로 설정용)
+  // ✅ 비율 계산
   useEffect(() => {
     if (imageData instanceof File) {
       const img = new Image();
@@ -148,6 +152,48 @@ export default function AdditionalEditor({ selectedImage }) {
         </button>
       </div>
 
+      {/* 🔹 SVG 변환 (색상 선택 추가) */}
+      <div className="tool-block">
+        <label>SVG 변환</label>
+        <select
+          className="input"
+          value={svgColors}
+          onChange={(e) => setSvgColors(e.target.value)}
+        >
+          <option value="1">단색</option>
+          <option value="2">2색</option>
+          <option value="3">3색</option>
+          <option value="4">4색</option>
+          <option value="5">5색</option>
+          <option value="6">6색</option>
+        </select>
+        <button
+          className="btn"
+          onClick={() => processImage("convert-svg", { colors: svgColors })}
+          disabled={loading}
+        >
+          SVG 변환
+        </button>
+      </div>
+
+      {/* 🔹 GIF 변환 (설명 입력 추가) */}
+      <div className="tool-block">
+        <label>GIF 변환</label>
+        <textarea
+          className="input"
+          placeholder="GIF 동작 설명을 입력하세요"
+          value={gifDesc}
+          onChange={(e) => setGifDesc(e.target.value)}
+        />
+        <button
+          className="btn"
+          onClick={() => processImage("convert-gif", { desc: gifDesc })}
+          disabled={loading}
+        >
+          GIF 변환
+        </button>
+      </div>
+
       {/* 🔹 키워드 분석 */}
       <div className="tool-block">
         <label>키워드 분석</label>
@@ -155,38 +201,17 @@ export default function AdditionalEditor({ selectedImage }) {
           {loading ? "분석 중..." : "키워드 분석"}
         </button>
 
+        <textarea
+          className="input"
+          value={keywords.join(", ")}
+          readOnly
+          placeholder="분석 결과가 여기에 표시됩니다."
+        />
         {keywords.length > 0 && (
-          <div className="keyword-result">
-            <p>{keywords.join(", ")}</p>
-            <button className="copy-btn" onClick={copyKeywords}>
-              복사
-            </button>
-          </div>
+          <button className="btn" onClick={copyKeywords}>
+            복사
+          </button>
         )}
-      </div>
-
-      {/* 🔹 SVG 변환 */}
-      <div className="tool-block">
-        <label>SVG 변환</label>
-        <button
-          className="btn"
-          onClick={() => processImage("convert-svg")}
-          disabled={loading}
-        >
-          SVG 변환
-        </button>
-      </div>
-
-      {/* 🔹 GIF 변환 */}
-      <div className="tool-block">
-        <label>GIF 변환</label>
-        <button
-          className="btn"
-          onClick={() => processImage("convert-gif")}
-          disabled={loading}
-        >
-          GIF 변환
-        </button>
       </div>
     </div>
   );
