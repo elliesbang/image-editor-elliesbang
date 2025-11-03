@@ -1,39 +1,56 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
+    // ✅ FormData로부터 이미지 파일 받기
     const formData = await request.formData();
     const imageFile = formData.get("image");
 
     if (!imageFile) {
-      return new Response(JSON.stringify({ error: "이미지가 없습니다." }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "이미지가 없습니다." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
+    // ✅ 파일 → 바이트 배열 변환
     const arrayBuffer = await imageFile.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    const response = await fetch("https://api-inference.huggingface.co/models/Sanster/lama-cleaner", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.HUGGINGFACE_API_KEY}`,
-        "Content-Type": "application/octet-stream",
-      },
-      body: bytes,
-    });
+    // ✅ Hugging Face API 요청 (배경제거 모델)
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/Sanster/lama-cleaner",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.HUGGINGFACE_API_KEY}`,
+          "Content-Type": "application/octet-stream",
+        },
+        body: bytes,
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`API 요청 실패 (${response.status})`);
     }
 
+    // ✅ 결과 변환
     const resultBuffer = await response.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(resultBuffer)));
+    const base64 = btoa(
+      String.fromCharCode(...new Uint8Array(resultBuffer))
+    );
 
-    return new Response(JSON.stringify({ result: base64, success: true }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    // ✅ JSON 응답 반환
+    return new Response(
+      JSON.stringify({ success: true, result: base64 }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   } catch (err) {
     console.error("🚨 remove-bg 오류:", err);
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: err.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 };
