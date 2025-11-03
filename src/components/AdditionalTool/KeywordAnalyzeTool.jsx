@@ -7,48 +7,52 @@ export default function KeywordAnalyzeTool({
   selectedUploadImage,
   selectedResultImage,
 }) {
-  const [keywords, setKeywords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState("");
+  const [commonKeywords, setCommonKeywords] = useState([]);
+  const [imageResults, setImageResults] = useState([]); // 개별 이미지 결과
 
-  const activeImage =
-    selectedResultImage ||
-    selectedUploadImage ||
-    selectedImage ||
-    (Array.isArray(selectedImages) && selectedImages[0]);
-  const hasActiveImage = Boolean(activeImage);
+  const activeImages =
+    (Array.isArray(selectedImages) && selectedImages.length > 0
+      ? selectedImages
+      : [selectedResultImage || selectedUploadImage || selectedImage].filter(Boolean));
 
-  // ✅ 키워드 분석
+  const hasActiveImage = activeImages.length > 0;
+
+  // ✅ 여러 이미지 키워드 분석
   const handleAnalyze = async () => {
-    const currentImage = getCurrentImage(activeImage);
-    if (!currentImage) return alert("이미지를 먼저 선택하세요!");
+    if (!hasActiveImage) return alert("이미지를 먼저 선택하세요!");
     setLoading(true);
 
     try {
-      const blob =
-        currentImage instanceof File
-          ? currentImage
-          : await fetch(
-              currentImage.startsWith("data:image")
-                ? currentImage
-                : `data:image/png;base64,${currentImage}`
-            ).then((r) => r.blob());
-
-      const base64 = await blobToBase64(blob);
+      // ✅ 여러 이미지 base64 배열 변환
+      const base64List = await Promise.all(
+        activeImages.map(async (img) => {
+          const currentImage = getCurrentImage(img);
+          const blob =
+            currentImage instanceof File
+              ? currentImage
+              : await fetch(
+                  currentImage.startsWith("data:image")
+                    ? currentImage
+                    : `data:image/png;base64,${currentImage}`
+                ).then((r) => r.blob());
+          return await blobToBase64(blob);
+        })
+      );
 
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64 }),
+        body: JSON.stringify({ imageBase64: base64List }),
       });
 
       const data = await res.json();
       if (data.success) {
-        setKeywords(data.keywords || []);
-        setTitle(data.title || "분석 결과");
+        setCommonKeywords(data.common_keywords || []);
+        setImageResults(data.images || []);
       } else throw new Error("분석 실패");
     } catch (err) {
-      console.error("분석 오류:", err);
+      console.error("🚨 분석 오류:", err);
       alert("키워드 분석 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -69,33 +73,55 @@ export default function KeywordAnalyzeTool({
         {loading ? "분석 중..." : "키워드 분석"}
       </button>
 
-      {keywords.length > 0 && (
+      {/* ✅ 공통 키워드 */}
+      {commonKeywords.length > 0 && (
         <div className="keyword-result">
-          {/* 🔹 제목 */}
           <div className="result-line">
-            <strong>제목:</strong>
-            <span>{title}</span>
+            <strong>공통 키워드:</strong>
+            <span>{commonKeywords.join(", ")}</span>
             <button
               className="copy-btn"
-              title="제목 복사"
-              onClick={() => copyText(title, "제목")}
+              title="공통 키워드 복사"
+              onClick={() => copyText(commonKeywords.join(", "), "공통 키워드")}
             >
               📋
             </button>
           </div>
+        </div>
+      )}
 
-          {/* 🔹 키워드 */}
-          <div className="result-line">
-            <strong>키워드:</strong>
-            <span>{keywords.join(", ")}</span>
-            <button
-              className="copy-btn"
-              title="키워드 복사"
-              onClick={() => copyText(keywords.join(", "), "키워드")}
-            >
-              📋
-            </button>
-          </div>
+      {/* ✅ 개별 이미지 결과 */}
+      {imageResults.length > 0 && (
+        <div className="multi-results">
+          {imageResults.map((res, i) => (
+            <div key={i} className="keyword-result" style={{ marginTop: "12px" }}>
+              <div className="result-line">
+                <strong>제목 {i + 1}:</strong>
+                <span>{res.title}</span>
+                <button
+                  className="copy-btn"
+                  title="제목 복사"
+                  onClick={() => copyText(res.title, `제목 ${i + 1}`)}
+                >
+                  📋
+                </button>
+              </div>
+
+              <div className="result-line">
+                <strong>키워드:</strong>
+                <span>{res.keywords.join(", ")}</span>
+                <button
+                  className="copy-btn"
+                  title="키워드 복사"
+                  onClick={() =>
+                    copyText(res.keywords.join(", "), `키워드 ${i + 1}`)
+                  }
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
