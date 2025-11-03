@@ -15,9 +15,9 @@ export const onRequestPost = async ({ request, env }) => {
     const arrayBuffer = await imageFile.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    // ✅ Hugging Face API 요청 (배경제거 모델)
+    // ✅ 새로운 Hugging Face Inference Providers 엔드포인트
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/Sanster/lama-cleaner",
+      "https://router.huggingface.co/hf-inference/models/Sanster/lama-cleaner",
       {
         method: "POST",
         headers: {
@@ -32,7 +32,7 @@ export const onRequestPost = async ({ request, env }) => {
       throw new Error(`API 요청 실패 (${response.status})`);
     }
 
-    // ✅ 결과 변환
+    // ✅ 결과 변환 (바이너리 → Base64)
     const resultBuffer = await response.arrayBuffer();
     const base64 = btoa(
       String.fromCharCode(...new Uint8Array(resultBuffer))
