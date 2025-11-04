@@ -11,30 +11,48 @@ export default function RemoveBgButton({ selectedImage, disabled }) {
       if (!imgSrc.startsWith("data:image")) {
         const blob = await fetch(imgSrc).then((r) => r.blob());
         const reader = new FileReader();
-        const base64 = await new Promise((resolve) => {
-          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+        imgSrc = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
           reader.readAsDataURL(blob);
         });
-        imgSrc = `data:image/png;base64,${base64}`;
       }
 
-      const base64 = imgSrc.split(",")[1];
-
+      // ✅ 서버로 요청 전송
       const res = await fetch("/api/remove-bg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64 }),
+        body: JSON.stringify({
+          imageBase64: imgSrc,
+          originalName: selectedImage?.file?.name || "uploaded_image.png",
+        }),
       });
 
       const data = await res.json();
-      if (!data.image) throw new Error("배경제거 실패");
 
-      const fileBlob = await fetch(data.image).then((r) => r.blob());
-      const file = new File([fileBlob], "remove_bg.png", { type: "image/png" });
+      // ✅ 서버 응답 검증
+      if (!data.success || !data.processed) {
+        console.error("🚨 remove-bg 실패:", data);
+        return alert("배경제거 중 오류가 발생했습니다.");
+      }
 
+      // ✅ 처리결과 데이터 받아오기
+      const { processed } = data;
+
+      // ✅ Blob 파일 생성 (선택사항)
+      const blob = await fetch(processed.thumbnail).then((r) => r.blob());
+      const file = new File([blob], processed.name || "remove_bg.png", {
+        type: "image/png",
+      });
+
+      // ✅ 전역 이벤트로 처리결과 섹션에 업로드 알림
       window.dispatchEvent(
         new CustomEvent("imageProcessed", {
-          detail: { file, thumbnail: data.image.split(",")[1] },
+          detail: {
+            file,
+            thumbnail: processed.thumbnail,
+            id: processed.id,
+            type: "processed",
+          },
         })
       );
 
