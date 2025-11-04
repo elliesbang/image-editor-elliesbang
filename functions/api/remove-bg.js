@@ -31,14 +31,17 @@ export const onRequestPost = async ({ request, env }) => {
     const HF_ENDPOINT = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`;
 
     // ✅ Hugging Face API 호출
-    const response = await fetch(HF_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_TOKEN}`,
-      },
-      body: formData,
-    });
-
+    // ✅ 수정 후
+const response = await fetch(
+  `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${HF_TOKEN}`,
+    },
+    body: formData,
+  }
+);
     if (!response.ok) {
       const errText = await response.text();
       console.error("🚨 Hugging Face 응답 오류:", errText);
