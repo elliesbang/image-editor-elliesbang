@@ -9,7 +9,8 @@ export const onRequestPost = async ({ request, env }) => {
       );
     }
 
-    const HF_TOKEN = env.HF_TOKEN; // ✅ Hugging Face 토큰
+    // ✅ 환경 변수 (Hugging Face 토큰)
+    const HF_TOKEN = env.HF_TOKEN;
     if (!HF_TOKEN) {
       throw new Error("HF_TOKEN 환경 변수가 설정되지 않았습니다.");
     }
@@ -25,20 +26,18 @@ export const onRequestPost = async ({ request, env }) => {
     const formData = new FormData();
     formData.append("file", new Blob([binary], { type: "image/png" }), "image.png");
 
-    // ✅ Hugging Face 모델 (Remove Background)
-    const HF_MODEL = "briaai/RMBG-1.4"; // 배경제거 모델명
+    // ✅ 최신 Hugging Face Router 경로 (2025 이후 전용)
+    const HF_MODEL = "briaai/RMBG-1.4";
+    const HF_ENDPOINT = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`;
 
     // ✅ Hugging Face API 호출
-    const response = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_TOKEN}`,
-        },
-        body: formData,
-      }
-    );
+    const response = await fetch(HF_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${HF_TOKEN}`,
+      },
+      body: formData,
+    });
 
     if (!response.ok) {
       const errText = await response.text();
@@ -48,7 +47,10 @@ export const onRequestPost = async ({ request, env }) => {
           error: "Hugging Face 요청 실패",
           detail: errText,
         }),
-        { status: response.status, headers: { "Content-Type": "application/json" } }
+        {
+          status: response.status,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
 
