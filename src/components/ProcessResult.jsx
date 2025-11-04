@@ -255,33 +255,37 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
               }`}
               onClick={() => toggleSelect(entry)}
             >
-              <img src={entry.src} alt={`결과 ${idx + 1}`} className="thumb" />
-              <button
-                className="delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteSingle(entry);
-                }}
-                aria-label="이미지 삭제"
-              >
-                ✕
-              </button>
-              {entry.meta?.width && entry.meta?.height && (
-                <div className="thumb-meta">
-                  {entry.meta.width}×{entry.meta.height}px
-                  {entry.meta?.label ? ` · ${entry.meta.label}` : ""}
-                </div>
-              )}
-              <button
-                className="save-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload(entry, idx);
-                }}
-                aria-label="이미지 저장"
-              >
-                💾
-              </button>
+              <div className="thumb-inner">
+                <img src={entry.src} alt={`결과 ${idx + 1}`} className="thumb" />
+                <button
+                  className="delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteSingle(entry);
+                  }}
+                  aria-label="이미지 삭제"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="thumb-footer">
+                {entry.meta?.width && entry.meta?.height && (
+                  <div className="thumb-meta">
+                    {entry.meta.width}×{entry.meta.height}px
+                    {entry.meta?.label ? ` · ${entry.meta.label}` : ""}
+                  </div>
+                )}
+                <button
+                  className="save-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(entry, idx);
+                  }}
+                  aria-label="이미지 저장"
+                >
+                  💾
+                </button>
+              </div>
             </div>
           ))
         )}

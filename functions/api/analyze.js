@@ -10,6 +10,11 @@ export const onRequestPost = async ({ request, env }) => {
     }
 
     // ✅ OpenAI REST API 호출
+    const cleanBase64 = imageBase64.replace(
+      /^data:image\/[a-zA-Z0-9+.-]+;base64,/,
+      ""
+    );
+
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -17,7 +22,7 @@ export const onRequestPost = async ({ request, env }) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini",
+        model: "gpt-4o",
         input: [
           {
             role: "user",
@@ -28,7 +33,7 @@ export const onRequestPost = async ({ request, env }) => {
               },
               {
                 type: "input_image",
-                image_url: `data:image/png;base64,${imageBase64}`,
+                image_url: `data:image/png;base64,${cleanBase64}`,
               },
             ],
           },
@@ -36,11 +41,18 @@ export const onRequestPost = async ({ request, env }) => {
       }),
     });
 
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(`OpenAI API 호출 실패: ${detail}`);
+    }
+
     const data = await res.json();
 
-    const result =
-      data.output?.[0]?.content?.[0]?.text?.trim() ||
-      "키워드를 찾을 수 없습니다.";
+    const message = data.output?.find((item) => item.type === "message");
+    const textContent = message?.content?.find(
+      (entry) => entry.type === "output_text"
+    );
+    const result = textContent?.text?.trim() || "키워드를 찾을 수 없습니다.";
 
     return new Response(JSON.stringify({ result }), {
       headers: { "Content-Type": "application/json" },
