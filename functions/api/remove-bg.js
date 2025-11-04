@@ -27,7 +27,7 @@ export const onRequestPost = async ({ request, env }) => {
     formData.append("file", new Blob([binary], { type: "image/png" }), "image.png");
 
     // ✅ 최신 Hugging Face Router 경로 (2025 이후 전용)
-    const HF_MODEL = "briaai/RMBG-1.4";
+    const HF_MODEL = "briaai/BRIA-RMBG-2.0"; // ✅ 최신 버전
     const HF_ENDPOINT = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`;
 
     // ✅ Hugging Face API 호출
