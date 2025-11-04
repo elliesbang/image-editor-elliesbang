@@ -37,28 +37,32 @@ export const onRequestPost = async ({ request, env }) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: "이 이미지를 분석하고 핵심 키워드 25개를 한국어로 추출해줘. 쉼표로 구분해줘.",
-                키워드들을 조합해서 자연스럽고 짧은 제목을 만들어줘
-                형식: 
-                {
-                  "title": "제목"
-                  "keywords": ["키워드1", "키워드2", ...]
-              },
-              {
-                type: "input_image",
-                image_url: `data:image/png;base64,${cleanBase64}`,
-              },
-            ],
-          },
-        ],
-      }),
+  model: "gpt-4o",
+  input: [
+    {
+      role: "user",
+      content: [
+        {
+          type: "input_text",
+          text:
+            "이 이미지를 분석해줘.\n" +
+            "1️⃣ 이 이미지에서 연관된 핵심 키워드 25개 이하를 한국어로 쉼표로 구분해줘.\n" +
+            "2️⃣ 그 키워드들을 조합해서 자연스럽고 짧은 제목(5~10자 이내)을 만들어줘.\n" +
+            "응답은 JSON 형식으로 반환해줘.\n" +
+            "형식:\n" +
+            "{\n" +
+            '  "title": "제목",\n' +
+            '  "keywords": ["키워드1", "키워드2", ...]\n' +
+            "}",
+        },
+        {
+          type: "input_image",
+          image_url: `data:image/png;base64,${cleanBase64}`,
+        },
+      ],
+    },
+  ],
+}),
     });
 
     if (!res.ok) {
