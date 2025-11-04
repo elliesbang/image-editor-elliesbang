@@ -37,17 +37,18 @@ export const onRequestPost = async ({ request, env }) => {
     const HF_MODEL = "briaai/RMBG-2.0";
     
     const response = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${HF_TOKEN}`,
-          "Content-Type": "application/octet-stream",
-        },
-        body: bytes,
-      }
-    );
-
+  `https://router.huggingface.co/hf-inference/models/${HF_MODEL}`,
+  {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${HF_TOKEN}`,
+      "Content-Type": "application/octet-stream",
+      "HF-User-Agent": "elliesbang-image-editor"
+    },
+    body: bytes,
+  }
+);
+    
     if (!response.ok) {
       const errText = await response.text();
       console.error("🚨 Hugging Face API 오류:", errText);
