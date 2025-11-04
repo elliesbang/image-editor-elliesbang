@@ -97,17 +97,21 @@ export const onRequestPost = async ({ request, env }) => {
       resultText = data.choices[0]?.message?.content?.trim() || "";
     }
 
-    const result = resultText || "키워드를 찾을 수 없습니다.";
-
     // ✅ 성공 응답 (프론트 호환)
-    return new Response(
-      JSON.stringify({
-        success: true,
-        result,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
-  } catch (err) {
+    let result;
+try {
+  // GPT가 JSON 형식으로 응답했을 때 파싱
+  result = JSON.parse(resultText);
+} catch {
+  // 혹시 JSON 형식이 아닐 때 대비
+  result = { title: "키워드 분석 결과", keywords: [resultText] };
+}
+
+return new Response(JSON.stringify(result), {
+  status: 200,
+  headers: { "Content-Type": "application/json" },
+});
+  catch (err) {
     console.error("🚨 analyze 오류:", err);
     return new Response(
       JSON.stringify({
