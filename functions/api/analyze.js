@@ -3,13 +3,12 @@ export const onRequestPost = async ({ request, env }) => {
     const contentType = request.headers.get("content-type") || "";
     let imageBase64 = "";
 
-    // ✅ JSON 요청 처리
+    // ✅ JSON 요청 처리 (프론트에서 JSON으로 보냄)
     if (contentType.includes("application/json")) {
       const body = await request.json();
       imageBase64 = body.imageBase64 || "";
     }
-
-    // ✅ FormData 요청 처리
+    // ✅ FormData 요청 처리 (예외적 지원)
     else if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
       const file = formData.get("image");
@@ -22,16 +21,13 @@ export const onRequestPost = async ({ request, env }) => {
     // ✅ 유효성 검사
     if (!imageBase64) {
       return new Response(
-        JSON.stringify({ error: "이미지가 없습니다. (imageBase64 누락)" }),
+        JSON.stringify({ success: false, error: "이미지가 없습니다. (imageBase64 누락)" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
     // ✅ Base64 정리 (prefix 제거)
-    const cleanBase64 = imageBase64.replace(
-      /^data:image\/[a-zA-Z0-9+.-]+;base64,/,
-      ""
-    );
+    const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
 
     // ✅ OpenAI REST API 호출
     const res = await fetch("https://api.openai.com/v1/responses", {
@@ -65,6 +61,7 @@ export const onRequestPost = async ({ request, env }) => {
       console.error("🚨 OpenAI API 호출 실패:", detail);
       return new Response(
         JSON.stringify({
+          success: false,
           error: "OpenAI API 호출 실패",
           detail,
         }),
@@ -74,13 +71,12 @@ export const onRequestPost = async ({ request, env }) => {
 
     const data = await res.json();
 
-    // ✅ output 파싱 보완
+    // ✅ 다양한 응답 포맷 커버
     let resultText = "";
+
     if (Array.isArray(data.output)) {
       const message = data.output.find((item) => item.type === "message");
-      const textContent = message?.content?.find(
-        (entry) => entry.type === "output_text"
-      );
+      const textContent = message?.content?.find((entry) => entry.type === "output_text");
       resultText = textContent?.text?.trim();
     }
 
@@ -88,16 +84,25 @@ export const onRequestPost = async ({ request, env }) => {
       resultText = data.output_text.trim();
     }
 
+    if (!resultText && Array.isArray(data.choices)) {
+      resultText = data.choices[0]?.message?.content?.trim() || "";
+    }
+
     const result = resultText || "키워드를 찾을 수 없습니다.";
 
-    return new Response(JSON.stringify({ result }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    // ✅ 성공 응답 (프론트 호환)
+    return new Response(
+      JSON.stringify({
+        success: true,
+        result,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (err) {
     console.error("🚨 analyze 오류:", err);
     return new Response(
       JSON.stringify({
+        success: false,
         error: "서버 처리 중 오류 발생",
         detail: err.message,
       }),
