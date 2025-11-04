@@ -44,7 +44,12 @@ export const onRequestPost = async ({ request, env }) => {
             content: [
               {
                 type: "input_text",
-                text: "이 이미지를 분석하고 핵심 키워드 10개를 한국어로 추출해줘. 쉼표로 구분해줘.",
+                text: "이 이미지를 분석하고 핵심 키워드 25개를 한국어로 추출해줘. 쉼표로 구분해줘.",
+                키워드들을 조합해서 자연스럽고 짧은 제목을 만들어줘
+                형식: 
+                {
+                  "title": "제목"
+                  "keywords": ["키워드1", "키워드2", ...]
               },
               {
                 type: "input_image",
