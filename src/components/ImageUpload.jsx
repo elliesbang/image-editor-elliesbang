@@ -78,7 +78,7 @@ const ImageUpload = ({
 
   // ✅ 전체 선택 / 해제 / 삭제
   const handleSelectAll = () => setSelectedImages([...images]);
-  const handleDeselectAll = () => setSelectedImages([]);
+  const handleDeselectAll = () => setSelectedImages([]);// ❌ 선택 비움 제거
   const handleDeleteAll = () => {
     if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
       images.forEach((img) => URL.revokeObjectURL(img.thumbnail)); // ✅ 메모리 정리
