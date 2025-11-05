@@ -1,29 +1,47 @@
-export const onRequestPost = async ({ request }) => {
+// ✅ Cloudflare Pages Function: /functions/api/denoise.js
+
+export const onRequestPost = async ({ request, env }) => {
   try {
-    const formData = await request.formData();
-    const imageFile = formData.get("image");
-    if (!imageFile)
-      return new Response(JSON.stringify({ error: "이미지가 없습니다." }), { status: 400 });
+    const { imageBase64 } = await request.json();
 
-    const blob = await imageFile.arrayBuffer();
-    const imageBitmap = await createImageBitmap(await new Blob([blob]));
-    const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
-    const ctx = canvas.getContext("2d");
+    if (!imageBase64) {
+      return new Response(
+        JSON.stringify({ error: "이미지 데이터가 없습니다." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    ctx.filter = "blur(1.5px)";
-    ctx.drawImage(imageBitmap, 0, 0);
+    // Base64 → Binary 변환
+    const clean = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    const bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
 
-    const blobResult = await canvas.convertToBlob({ type: "image/png" });
-    const buffer = await blobResult.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
-    return new Response(JSON.stringify({ result: base64, success: true }), {
-      headers: { "Content-Type": "application/json" },
+    // ✅ Cloudflare Workers AI 호출 (Real-ESRGAN)
+    const result = await env.AI.run("@cf/real-esrgan", {
+      image: [...bytes],
     });
+
+    if (!result?.output_image) {
+      return new Response(
+        JSON.stringify({ error: "AI 디노이즈 실패" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        image: result.output_image, // base64 PNG
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   } catch (err) {
-    console.error("🚨 denoise 오류:", err);
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
-      status: 500,
-    });
+    console.error("🚨 denoise AI 오류:", err);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: err.message || "AI 디노이즈 처리 실패",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 };
