@@ -3,7 +3,7 @@
   "include": [
     "/api/remove-bg",
     "/api/remove-bg-crop",
-    "/api/crop",
+    "/api/crop-auto",
     "/api/denoise",
     "/api/resize",
     "/api/svg",
