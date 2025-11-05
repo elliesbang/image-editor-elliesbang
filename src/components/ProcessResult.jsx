@@ -80,36 +80,30 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
   // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
 useEffect(() => {
   const handleProcessed = (e) => {
-   const { file, thumbnail, result, meta } = e.detail || {};
+    const { file, thumbnail, result, meta } = e.detail || {};
     const base64Data = result || thumbnail;
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // ✅ 비동기 순서 충돌 방지 — 각 이벤트를 별도의 스택으로 밀어 넣음
-        queueMicrotask(() => {
-          setLocalResults((prev) => [
-            ...prev,
-            {
-              id: generateId(),
-              src: reader.result,
-              meta: meta || {},
-            },
-          ]);
-        });
-      };
-      reader.readAsDataURL(file);
-    } else if (base64Data) {
-      queueMicrotask(() => {
-        setLocalResults((prev) => [
+    const addEntry = (src) => {
+      setLocalResults((prev) => {
+        // ✅ 중복 방지: 같은 base64가 이미 있으면 추가 안 함
+        if (prev.some((item) => item.src === src)) return prev;
+        return [
           ...prev,
           {
             id: generateId(),
-            src: base64Data,
+            src,
             meta: meta || {},
           },
-        ]);
+        ];
       });
+    };
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => addEntry(reader.result);
+      reader.readAsDataURL(file);
+    } else if (base64Data) {
+      addEntry(ensureDataUrl(base64Data));
     }
   };
 
