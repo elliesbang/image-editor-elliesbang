@@ -1,6 +1,10 @@
 {
   "version": 1,
   "include": [
+    "/api/remove-bg",
+    "/api/remove-bg-crop",
+    "/api/crop",
+    "/api/denoise",
     "/api/resize",
     "/api/svg",
     "/api/gif",
