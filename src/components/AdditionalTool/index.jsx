@@ -1,15 +1,13 @@
-// src/components/AdditionalTool/index.jsx
-import ResizeTool from "./ResizeTool";
-import SvgConvertTool from "./SvgConvertTool";
-import GifConvertTool from "./GifConvertTool";
-import KeywordAnalyzeTool from "./KeywordAnalyzeTool";
+import ResizeTool from "../../features/resize";
+import SvgConvertTool from "../../features/convert/SvgConvert";
+import GifConvertTool from "../../features/convert/GifConvert";
+import KeywordAnalyzeTool from "../../features/keyword";
 
 export default function AdditionalTool({
   selectedImage,
   selectedImages = [],
   selectedResultImage,
-  selectedResultImages = [], // ✅ 추가
-  setSelectedImages,
+  selectedResultImages = [],
 }) {
   const hasImage = !!selectedImage || selectedImages.length > 0;
 
@@ -20,27 +18,39 @@ export default function AdditionalTool({
       ? [selectedImage]
       : [];
 
+  const activeResults =
+    Array.isArray(selectedResultImages) && selectedResultImages.length > 0
+      ? selectedResultImages
+      : selectedResultImage
+      ? [selectedResultImage]
+      : [];
+
   return (
     <div className="additional-section">
       <div className="button-grid">
         <ResizeTool
+          selectedImage={selectedImage}
           selectedImages={activeImages}
           selectedResultImage={selectedResultImage}
-          setSelectedImages={setSelectedImages}
+          selectedResultImages={activeResults}
         />
         <SvgConvertTool
+          selectedImage={selectedImage}
           selectedImages={activeImages}
           selectedResultImage={selectedResultImage}
+          selectedResults={activeResults}
         />
         <GifConvertTool
+          selectedImage={selectedImage}
           selectedImages={activeImages}
           selectedResultImage={selectedResultImage}
+          selectedResults={activeResults}
         />
         <KeywordAnalyzeTool
           selectedImage={selectedImage}
-          selectedImages={selectedImages}
+          selectedImages={activeImages}
           selectedResultImage={selectedResultImage}
-          selectedResultImages={selectedResultImages} // ✅ 정상 작동
+          selectedResultImages={activeResults}
         />
       </div>
 
@@ -60,5 +70,4 @@ export default function AdditionalTool({
   );
 }
 
-// ✅ 추가 (각 개별 툴 export)
 export { ResizeTool, SvgConvertTool, GifConvertTool, KeywordAnalyzeTool };
