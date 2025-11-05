@@ -4,9 +4,7 @@
     "/api/analyze",
     "/api/remove-bg",
     "/api/remove-bg-crop",
-    "/api/resize",
     "/api/denoise",
-    "/api/crop",
     "/api/svg"
   ],
   "exclude": []
