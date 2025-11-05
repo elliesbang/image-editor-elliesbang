@@ -4,15 +4,19 @@ import { saveAs } from "file-saver";
 
 const ensureDataUrl = (value) => {
   if (!value) return "";
-  return value.startsWith("data:image") ? value : `data:image/png;base64,${value}`;
+  return value.startsWith("data:image")
+    ? value
+    : `data:image/png;base64,${value}`;
 };
 
 const stripDataUrlPrefix = (value = "") =>
   value.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
 
-// 수정 (밀리초 단위 중복 방지)
+// ✅ 고유 ID 생성 (밀리초 단위 중복 방지)
 const generateId = () =>
-  `${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2, 11)}`;
+  `${Date.now()}-${
+    crypto.randomUUID?.() || Math.random().toString(36).slice(2, 11)
+  }`;
 
 const loadDimensions = (src) =>
   new Promise((resolve) => {
@@ -80,40 +84,68 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
   );
 
   // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
-useEffect(() => {
-  const handleProcessed = (e) => {
-    const { file, thumbnail, result, meta } = e.detail || {};
-    const base64Data = result || thumbnail;
+  useEffect(() => {
+    const handleProcessed = (e) => {
+      const { file, thumbnail, result, meta } = e.detail || {};
+      let src = thumbnail || result || "";
 
-    const addResultSafely = (src) => {
-      // ✅ 렌더 타이밍 분리로 상태 꼬임 방지
+      // ✅ File 객체 처리 (워커 AI/로컬 변환 대응)
+      if (file instanceof File) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          if (!dataUrl) return;
+          requestAnimationFrame(() => {
+            setLocalResults((prev) => {
+              if (prev.some((p) => p.src === dataUrl)) return prev; // 중복 방지
+              return [
+                ...prev,
+                {
+                  id:
+                    crypto.randomUUID?.() ||
+                    `${Date.now()}-${Math.random()
+                      .toString(36)
+                      .slice(2, 11)}`,
+                  src: dataUrl,
+                  meta: meta || {},
+                },
+              ];
+            });
+          });
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // ✅ Base64 문자열 처리 (워커 AI 반환 대응)
+      if (typeof src === "string" && !src.startsWith("data:image")) {
+        src = `data:image/png;base64,${src}`;
+      }
+
+      if (!src) return;
+
+      // ✅ 중복 방지 및 렌더 타이밍 보정
       requestAnimationFrame(() => {
-        setLocalResults((prev) => [
-          ...prev,
-          {
-            id:
-              crypto.randomUUID?.() ||
-              `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-            src,
-            meta: meta || {},
-          },
-        ]);
+        setLocalResults((prev) => {
+          if (prev.some((p) => p.src === src)) return prev;
+          return [
+            ...prev,
+            {
+              id:
+                crypto.randomUUID?.() ||
+                `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+              src,
+              meta: meta || {},
+            },
+          ];
+        });
       });
     };
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => addResultSafely(reader.result);
-      reader.readAsDataURL(file);
-    } else if (base64Data) {
-      addResultSafely(base64Data);
-    }
-  };
-
-  window.addEventListener("imageProcessed", handleProcessed);
-  return () => window.removeEventListener("imageProcessed", handleProcessed);
-}, []);
-
+    window.addEventListener("imageProcessed", handleProcessed);
+    return () =>
+      window.removeEventListener("imageProcessed", handleProcessed);
+  }, []);
 
   // ✅ 외부 results 변경 시 동기화 (초기 전달 및 별도 결과 배열 사용 시)
   useEffect(() => {
@@ -205,6 +237,7 @@ useEffect(() => {
     saveAs(content, "elliesbang_results.zip");
   };
 
+  // ✅ 누락된 width/height 자동 보정
   useEffect(() => {
     let isActive = true;
 
@@ -212,7 +245,6 @@ useEffect(() => {
       const targets = localResults.filter(
         (entry) => entry && (!entry.meta?.width || !entry.meta?.height)
       );
-
       if (targets.length === 0) return;
 
       const updates = await Promise.all(
@@ -273,7 +305,11 @@ useEffect(() => {
               onClick={() => toggleSelect(entry)}
             >
               <div className="thumb-inner">
-                <img src={entry.src} alt={`결과 ${idx + 1}`} className="thumb" />
+                <img
+                  src={entry.src}
+                  alt={`결과 ${idx + 1}`}
+                  className="thumb"
+                />
                 <button
                   className="delete-btn"
                   onClick={(e) => {
