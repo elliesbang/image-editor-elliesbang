@@ -1,107 +1,89 @@
 import React, { useState } from "react";
-import { getCurrentImage, blobToBase64 } from "./utils";
 
-export default function KeywordAnalyzeTool({
-  selectedImage,
-  selectedImages,
-  selectedUploadImage,
-  selectedResultImage,
-}) {
+export default function KeywordAnalyzer({ selectedResults = [] }) {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
-  const [common, setCommon] = useState([]);
-  const [perImage, setPerImage] = useState([]);
-
-  // ✅ 선택된 이미지 (1장만 분석)
-  const activeImage =
-    selectedResultImage || selectedUploadImage || selectedImage ||
-    (Array.isArray(selectedImages) && selectedImages.length > 0 && selectedImages[0]);
-
-  const hasActive = !!activeImage;
+  const [keywords, setKeywords] = useState([]);
 
   const handleAnalyze = async () => {
-    if (!hasActive) return alert("이미지를 먼저 선택하세요!");
+    if (!selectedResults.length)
+      return alert("이미지를 하나 이상 선택하세요!");
+
     setLoading(true);
     try {
-      // ✅ 선택된 이미지 base64로 변환
-      const src = getCurrentImage(activeImage);
-      const blob =
-        src instanceof File
-          ? src
-          : await fetch(src.startsWith("data:image") ? src : `data:image/png;base64,${src}`).then((r) => r.blob());
-      const imageBase64 = await blobToBase64(blob);
+      const imageBase64Array = await Promise.all(
+        selectedResults.map(async (img) => {
+          if (typeof img === "string") return img;
+          if (img.src?.startsWith("data:image")) return img.src;
+          const blob = await fetch(img.src).then((r) => r.blob());
+          return await new Promise((res) => {
+            const reader = new FileReader();
+            reader.onloadend = () => res(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        })
+      );
 
-      // ✅ 서버에 단일 이미지 전달
-     const res = await fetch("/api/analyze", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ imageBase64List }),
-});
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: imageBase64Array }),
+      });
 
-const data = await res.json();
-console.log("✅ 분석 결과:", data); // ✅ 여기에 추가
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-if (!data.success) throw new Error(data.error || "분석 실패");
-
-
-      // ✅ 서버 응답 결과 반영
-      setTitle("키워드 분석 결과");
-      if (typeof data.result === "string") {
-        setCommon(data.result.split(",").map((k) => k.trim()));
-      } else if (Array.isArray(data.result)) {
-        setCommon(data.result);
-      }
-    } catch (e) {
-      console.error("키워드 분석 오류:", e);
+      setTitle(data.title);
+      setKeywords(data.keywords);
+    } catch (err) {
+      console.error("🚨 분석 오류:", err);
       alert("키워드 분석 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
-  const copyText = (text, label) => {
-    if (!text) return;
+  const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
-    alert(`${label} 복사 완료 ✅`);
+    alert(`${label} 복사 완료!`);
   };
 
   return (
-    <div className="tool-block">
-      <label>키워드 분석</label>
-      <button className="btn" onClick={handleAnalyze} disabled={loading || !hasActive}>
+    <div className="tool-row">
+      <button className="btn" onClick={handleAnalyze} disabled={loading}>
         {loading ? "분석 중..." : "키워드 분석"}
       </button>
 
-      {common.length > 0 && (
-        <div className="keyword-result" style={{ marginTop: 12 }}>
-          <div
-            className="result-line"
-            style={{ display: "flex", gap: 8, alignItems: "center" }}
-          >
-            <strong>제목:</strong>
-            <span>{title}</span>
+      {title && (
+        <div className="analysis-result">
+          <h3>
+            제목{" "}
             <button
               className="copy-btn"
-              title="제목 복사"
-              onClick={() => copyText(title, "제목")}
+              onClick={() => copyToClipboard(title, "제목")}
             >
               📋
             </button>
-          </div>
+          </h3>
+          <p>{title}</p>
 
-          <div
-            className="result-line"
-            style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}
-          >
-            <strong>키워드:</strong>
-            <span>{common.join(", ")}</span>
+          <h3 style={{ marginTop: "10px" }}>
+            키워드{" "}
             <button
               className="copy-btn"
-              title="키워드 복사"
-              onClick={() => copyText(common.join(", "), "키워드")}
+              onClick={() =>
+                copyToClipboard(keywords.join(", "), "키워드")
+              }
             >
               📋
             </button>
+          </h3>
+          <div className="keyword-list">
+            {keywords.map((k, i) => (
+              <span key={i} className="keyword-tag">
+                {k}
+              </span>
+            ))}
           </div>
         </div>
       )}
