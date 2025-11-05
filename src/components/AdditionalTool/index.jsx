@@ -4,8 +4,15 @@ import SvgConvertTool from "./SvgConvertTool";
 import GifConvertTool from "./GifConvertTool";
 import KeywordAnalyzeTool from "./KeywordAnalyzeTool";
 
-export default function AdditionalTool({ selectedImage, selectedImages = [], selectedResultImage, setSelectedImages }) {
+export default function AdditionalTool({
+  selectedImage,
+  selectedImages = [],
+  selectedResultImage,
+  selectedResultImages = [], // ✅ 추가
+  setSelectedImages,
+}) {
   const hasImage = !!selectedImage || selectedImages.length > 0;
+
   const activeImages =
     Array.isArray(selectedImages) && selectedImages.length > 0
       ? selectedImages
@@ -30,11 +37,11 @@ export default function AdditionalTool({ selectedImage, selectedImages = [], sel
           selectedResultImage={selectedResultImage}
         />
         <KeywordAnalyzeTool
-  selectedImage={selectedImage}
-  selectedImages={selectedImages}
-  selectedResultImage={selectedResultImage}
-  selectedResultImages={selectedResultImages}
-/>
+          selectedImage={selectedImage}
+          selectedImages={selectedImages}
+          selectedResultImage={selectedResultImage}
+          selectedResultImages={selectedResultImages} // ✅ 정상 작동
+        />
       </div>
 
       {!hasImage && (
@@ -53,5 +60,5 @@ export default function AdditionalTool({ selectedImage, selectedImages = [], sel
   );
 }
 
-// ✅ 추가
+// ✅ 추가 (각 개별 툴 export)
 export { ResizeTool, SvgConvertTool, GifConvertTool, KeywordAnalyzeTool };
