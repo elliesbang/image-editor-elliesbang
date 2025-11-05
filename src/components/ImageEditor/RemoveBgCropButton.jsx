@@ -1,53 +1,97 @@
 import React from "react";
 import { getImageURL } from "./utils";
 
-export default function RemoveBgCropButton({ selectedImage, disabled }) {
+export default function RemoveBgCropButton({ selectedImages = [], disabled }) {
   const handleClick = async () => {
-    const imgSrc = getImageURL(selectedImage);
-    if (!imgSrc) return alert("이미지를 먼저 선택하세요!");
-
-    // ✅ Base64 안전 추출 + 유효성 검사
-    const base64 = imgSrc.includes(",") ? imgSrc.split(",")[1] : imgSrc;
-
-    if (!base64 || base64.length < 100) {
-      alert("이미지 데이터가 비정상적이에요. 다시 업로드해주세요.");
-      console.error("🚨 base64 추출 실패:", imgSrc);
-      return;
-    }
+    if (!selectedImages.length)
+      return alert("이미지를 하나 이상 선택하세요!");
 
     try {
-      console.log("🚀 서버로 전송 중:", base64.slice(0, 50) + "...");
+      await Promise.all(
+        selectedImages.map(async (img, idx) => {
+          const imgSrc = getImageURL(img);
+          if (!imgSrc) return;
 
-      const res = await fetch("/api/remove-bg", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ imageBase64: base64 }),
-});
+          // ✅ 1️⃣ 배경제거 (현재 remove-bg.js와 동일 구조)
+          const response = await fetch("/api/remove-bg", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64: imgSrc }),
+          });
 
-const data = await res.json();
-if (!res.ok || !data.image) throw new Error("배경제거 실패 또는 이미지 없음");
+          if (!response.ok) throw new Error("배경제거 실패");
+          const { image: bgRemovedBase64 } = await response.json();
+          if (!bgRemovedBase64) throw new Error("배경제거 결과 없음");
 
-      if (!res.ok) {
-        alert(`서버 오류 (${res.status})`);
-        console.error("❌ 서버 응답:", data);
-        return;
-      }
+          // ✅ 2️⃣ 자동 크롭 (CropButton의 최신 버전 그대로 적용)
+          const autoCrop = (src) =>
+            new Promise((resolve) => {
+              const image = new Image();
+              image.src = src;
+              image.onload = () => {
+                const w = image.width, h = image.height;
+                const c = document.createElement("canvas");
+                c.width = w; c.height = h;
+                const ctx = c.getContext("2d");
+                ctx.drawImage(image, 0, 0);
 
-      if (!data.image) throw new Error("서버에서 결과 이미지를 반환하지 않았습니다.");
+                const { data } = ctx.getImageData(0, 0, w, h);
+                let minX = w, minY = h, maxX = 0, maxY = 0;
+                const alphaThreshold = 10; // 🔥 투명도 기준 강화 (fringe 제거)
 
-      // ✅ Blob/File 변환
-      const croppedBase64 = await autoCrop(data.image);
-const fileBlob = await fetch(croppedBase64).then((r) => r.blob());
-      const file = new File([fileBlob], "bg_crop.png", { type: "image/png" });
+                for (let y = 0; y < h; y++) {
+                  for (let x = 0; x < w; x++) {
+                    const a = data[(y * w + x) * 4 + 3];
+                    if (a > alphaThreshold) {
+                      minX = Math.min(minX, x);
+                      minY = Math.min(minY, y);
+                      maxX = Math.max(maxX, x);
+                      maxY = Math.max(maxY, y);
+                    }
+                  }
+                }
 
-      // ✅ 전역 이벤트로 결과 전달
-      window.dispatchEvent(
-        new CustomEvent("imageProcessed", {
-          detail: { file, thumbnail: data.image.split(",")[1] },
+                const pad = 1; // 🔥 여백 1px만 허용
+                minX = Math.max(0, minX - pad);
+                minY = Math.max(0, minY - pad);
+                maxX = Math.min(w - 1, maxX + pad);
+                maxY = Math.min(h - 1, maxY + pad);
+
+                const cropW = maxX - minX + 1;
+                const cropH = maxY - minY + 1;
+
+                const out = document.createElement("canvas");
+                out.width = cropW; out.height = cropH;
+                out.getContext("2d").drawImage(c, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+                resolve(out.toDataURL("image/png"));
+              };
+            });
+
+          const croppedBase64Full = await autoCrop(bgRemovedBase64);
+
+          // ✅ 3️⃣ Blob + File 변환
+          const blob = await fetch(croppedBase64Full).then((r) => r.blob());
+          const file = new File([blob], `removed_cropped_${idx + 1}.png`, {
+            type: "image/png",
+          });
+
+          // ✅ 4️⃣ 처리결과 섹션에 전달 (ProcessResult.jsx가 자동 수신)
+          requestAnimationFrame(() => {
+            window.dispatchEvent(
+              new CustomEvent("imageProcessed", {
+                detail: {
+                  file,
+                  thumbnail: croppedBase64Full,
+                  meta: { label: "배경제거+크롭" },
+                },
+              })
+            );
+          });
         })
       );
 
-      alert("✅ 배경제거 + 크롭 완료!");
+      alert(`✅ ${selectedImages.length}개의 이미지 배경제거+크롭 완료!`);
     } catch (err) {
       console.error("🚨 배경제거+크롭 오류:", err);
       alert("배경제거+크롭 중 오류가 발생했습니다.");
