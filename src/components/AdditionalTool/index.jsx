@@ -30,9 +30,11 @@ export default function AdditionalTool({ selectedImage, selectedImages = [], sel
           selectedResultImage={selectedResultImage}
         />
         <KeywordAnalyzeTool
-          selectedImages={activeImages}
-          selectedResultImage={selectedResultImage}
-        />
+  selectedImage={selectedImage}
+  selectedImages={selectedImages}
+  selectedResultImage={selectedResultImage}
+  selectedResultImages={selectedResultImages}
+/>
       </div>
 
       {!hasImage && (
