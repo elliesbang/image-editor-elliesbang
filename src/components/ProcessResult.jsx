@@ -78,9 +78,9 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
   );
 
   // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
-  seEffect(() => {
+useEffect(() => {
   const handleProcessed = (e) => {
-    const { file, thumbnail, result, meta } = e.detail || {};
+   const { file, thumbnail, result, meta } = e.detail || {};
     const base64Data = result || thumbnail;
 
     if (file) {
