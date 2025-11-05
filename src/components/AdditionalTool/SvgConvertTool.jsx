@@ -1,40 +1,63 @@
 import React, { useState } from "react";
-import { getCurrentImage } from "./utils";
+import { getImageURL } from "../ImageEditor/utils";
 
 export default function SvgConvertTool({
-  selectedImage,
-  selectedImages,
-  selectedUploadImage,
-  selectedResultImage,
+  selectedResults = [], // ✅ 처리결과 섹션에서 선택된 이미지들
+  disabled,
 }) {
+  const [maxColors, setMaxColors] = useState(6);
   const [loading, setLoading] = useState(false);
 
-  const activeImage = selectedResultImage || selectedUploadImage || selectedImage || (Array.isArray(selectedImages) && selectedImages[0]);
-  const hasActiveImage = Boolean(activeImage);
+  const hasSelected = Array.isArray(selectedResults) && selectedResults.length > 0;
 
-  const processImage = async (colors) => {
-    const currentImage = getCurrentImage(activeImage);
-    if (!currentImage) return alert("이미지를 먼저 선택하세요!");
+  const handleSvgConvert = async () => {
+    if (!hasSelected)
+      return alert("⚠️ 처리결과 섹션에서 이미지를 하나 이상 선택하세요!");
+
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("colors", colors);
+      for (const [i, img] of selectedResults.entries()) {
+        const imgSrc = getImageURL(img);
+        if (!imgSrc) continue;
 
-      if (currentImage instanceof File) formData.append("image", currentImage);
-      else {
-        const clean = currentImage.replace(/^data:image\/(png|jpeg);base64,/, "");
-        const blob = await fetch(`data:image/png;base64,${clean}`).then((r) => r.blob());
-        formData.append("image", blob, "image.png");
+        // ✅ 서버로 변환 요청
+        const res = await fetch("/api/svg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageBase64: imgSrc,
+            maxColors,
+          }),
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          console.error("🚨 SVG 변환 실패:", data.error);
+          continue;
+        }
+
+        // ✅ SVG Blob 생성
+        const blob = new Blob([data.svg], { type: "image/svg+xml" });
+        const file = new File([blob], `vector_${i + 1}.svg`, {
+          type: "image/svg+xml",
+        });
+
+        // ✅ 처리결과로 전송
+        window.dispatchEvent(
+          new CustomEvent("imageProcessed", {
+            detail: {
+              file,
+              thumbnail: URL.createObjectURL(blob),
+              meta: { label: `SVG(${maxColors}색)` },
+            },
+          })
+        );
       }
 
-      const res = await fetch("/api/convert-svg", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!data.result) throw new Error("SVG 변환 실패");
-
-      alert("SVG 변환 완료!");
+      alert(`✅ ${selectedResults.length}개의 이미지 SVG 변환 완료!`);
     } catch (err) {
-      console.error("SVG 오류:", err);
+      console.error("🚨 SVG 변환 오류:", err);
       alert("SVG 변환 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -42,19 +65,26 @@ export default function SvgConvertTool({
   };
 
   return (
-    <div className="tool-block">
-      <label>SVG 변환</label>
-      <select id="svgColorSelect" className="input" defaultValue="1" style={{ marginBottom: "8px" }}>
+    <div className="tool-row">
+      <label>SVG 색상수:</label>
+      <select
+        value={maxColors}
+        onChange={(e) => setMaxColors(Number(e.target.value))}
+        disabled={loading}
+      >
         {[1, 2, 3, 4, 5, 6].map((n) => (
-          <option key={n} value={n}>{`${n}색`}</option>
+          <option key={n} value={n}>
+            {n}색
+          </option>
         ))}
       </select>
+
       <button
         className="btn"
-        onClick={() => processImage(document.getElementById("svgColorSelect").value)}
-        disabled={loading || !hasActiveImage}
+        onClick={handleSvgConvert}
+        disabled={disabled || !hasSelected || loading}
       >
-        {loading ? "변환 중..." : "SVG 변환"}
+        {loading ? "SVG 변환 중..." : "SVG 변환 실행"}
       </button>
     </div>
   );
