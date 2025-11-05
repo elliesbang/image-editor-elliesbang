@@ -10,7 +10,9 @@ const ensureDataUrl = (value) => {
 const stripDataUrlPrefix = (value = "") =>
   value.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
 
-const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+// 수정 (밀리초 단위 중복 방지)
+const generateId = () =>
+  `${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2, 11)}`;
 
 const loadDimensions = (src) =>
   new Promise((resolve) => {
