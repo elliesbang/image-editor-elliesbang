@@ -27,12 +27,12 @@ const ImageUpload = ({
       }));
 
     const updated = [...images, ...newImages];
-    setImages(updated);
-    if (newImages.length > 0) setSelectedImage(newImages[0]);
+setImages(updated);
 
-    // ❌ 업로드 시 처리결과 섹션 자동 반영 방지
-    // onImagesUploaded?.(newImages);
-  };
+- // setSelectedImages([]); // ❌ 선택 비우기 제거
++ setSelectedImages(updated); // ✅ 업로드 후 자동으로 전체 선택 (사용자가 나중에 해제 가능)
+
+if (newImages.length > 0) setSelectedImage(newImages[0]);
 
   // ✅ 파일 input 업로드
   const handleFileChange = (e) => handleImageUpload(e.target.files);
