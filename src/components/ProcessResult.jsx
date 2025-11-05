@@ -85,33 +85,35 @@ useEffect(() => {
     const { file, thumbnail, result, meta } = e.detail || {};
     const base64Data = result || thumbnail;
 
-    const addEntry = (src) => {
-      setLocalResults((prev) => {
-        // ✅ 중복 방지: 같은 base64가 이미 있으면 추가 안 함
-        if (prev.some((item) => item.src === src)) return prev;
-        return [
+    const addResultSafely = (src) => {
+      // ✅ 렌더 타이밍 분리로 상태 꼬임 방지
+      requestAnimationFrame(() => {
+        setLocalResults((prev) => [
           ...prev,
           {
-            id: generateId(),
+            id:
+              crypto.randomUUID?.() ||
+              `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             src,
             meta: meta || {},
           },
-        ];
+        ]);
       });
     };
 
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => addEntry(reader.result);
+      reader.onload = () => addResultSafely(reader.result);
       reader.readAsDataURL(file);
     } else if (base64Data) {
-      addEntry(ensureDataUrl(base64Data));
+      addResultSafely(base64Data);
     }
   };
 
   window.addEventListener("imageProcessed", handleProcessed);
   return () => window.removeEventListener("imageProcessed", handleProcessed);
 }, []);
+
 
   // ✅ 외부 results 변경 시 동기화 (초기 전달 및 별도 결과 배열 사용 시)
   useEffect(() => {
