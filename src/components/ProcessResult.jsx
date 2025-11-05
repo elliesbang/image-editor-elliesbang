@@ -78,25 +78,44 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
   );
 
   // ✅ 새로 처리된 결과 자동 반영 (배경제거·크롭·노이즈·리사이즈 등)
-  useEffect(() => {
-    const handleProcessed = (e) => {
-      const { file, thumbnail, result, meta } = e.detail || {};
-      const base64Data = result || thumbnail;
+  seEffect(() => {
+  const handleProcessed = (e) => {
+    const { file, thumbnail, result, meta } = e.detail || {};
+    const base64Data = result || thumbnail;
 
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = () => {
-         setTimeout(() => addResult(reader.result, meta), 0); 
-        };
-        reader.readAsDataURL(file);
-      } else if (base64Data) {
-        addResult(base64Data, meta);
-      }
-    };
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // ✅ 비동기 순서 충돌 방지 — 각 이벤트를 별도의 스택으로 밀어 넣음
+        queueMicrotask(() => {
+          setLocalResults((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              src: reader.result,
+              meta: meta || {},
+            },
+          ]);
+        });
+      };
+      reader.readAsDataURL(file);
+    } else if (base64Data) {
+      queueMicrotask(() => {
+        setLocalResults((prev) => [
+          ...prev,
+          {
+            id: generateId(),
+            src: base64Data,
+            meta: meta || {},
+          },
+        ]);
+      });
+    }
+  };
 
-    window.addEventListener("imageProcessed", handleProcessed);
-    return () => window.removeEventListener("imageProcessed", handleProcessed);
-  }, [addResult]);
+  window.addEventListener("imageProcessed", handleProcessed);
+  return () => window.removeEventListener("imageProcessed", handleProcessed);
+}, []);
 
   // ✅ 외부 results 변경 시 동기화 (초기 전달 및 별도 결과 배열 사용 시)
   useEffect(() => {
