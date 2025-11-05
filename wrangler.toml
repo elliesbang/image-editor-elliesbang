@@ -2,7 +2,4 @@ name = "image-editor-elliesbang"
 compatibility_date = "2024-11-05"
 node_compat = true
 
-[pages]
-# ✅ Cloudflare Pages가 dist 폴더를 정적 자산으로,
-# ✅ functions 폴더를 서버리스 함수로 자동 인식하도록 지정
-build_output_dir = "dist"
+pages_build_output_dir = "dist"
