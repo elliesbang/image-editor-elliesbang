@@ -1,3 +1,7 @@
 name = "image-editor-elliesbang"
 compatibility_date = "2024-11-05"
 pages_build_output_dir = "dist"
+
+# ✅ Cloudflare AI 바인딩 추가
+[ai]
+binding = "AI"
