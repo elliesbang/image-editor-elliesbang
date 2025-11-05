@@ -86,7 +86,7 @@ export default function ProcessResult({ images, results, setSelectedResult }) {
       if (file) {
         const reader = new FileReader();
         reader.onload = () => {
-          addResult(reader.result, meta);
+         setTimeout(() => addResult(reader.result, meta), 0); 
         };
         reader.readAsDataURL(file);
       } else if (base64Data) {
