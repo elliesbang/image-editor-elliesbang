@@ -22,17 +22,20 @@ export default function RemoveBgButton({ selectedImages = [], disabled }) {
             });
           }
 
-          // ✅ 워커 AI 바인딩 호출
-          const resp = await AI.run("@cf/elliesbang/remove-background", {
-            image: imgSrc,
+          // ✅ Cloudflare Function 호출
+          const resp = await fetch("/api/remove-bg", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageBase64: imgSrc }),
           });
 
-          if (!resp?.image) {
-            console.error("🚨 배경제거 실패:", resp);
+          const data = await resp.json();
+          if (!data?.image) {
+            console.error("🚨 배경제거 실패:", data);
             return;
           }
 
-          const resultBase64 = resp.image;
+          const resultBase64 = data.image;
           const dataUrl = resultBase64.startsWith("data:image")
             ? resultBase64
             : `data:image/png;base64,${resultBase64}`;
@@ -42,7 +45,7 @@ export default function RemoveBgButton({ selectedImages = [], disabled }) {
             type: "image/png",
           });
 
-          // ✅ 처리결과로 전달
+          // ✅ 처리결과 반영
           window.dispatchEvent(
             new CustomEvent("imageProcessed", {
               detail: {
@@ -57,7 +60,7 @@ export default function RemoveBgButton({ selectedImages = [], disabled }) {
 
       alert(`✅ ${selectedImages.length}개의 이미지 배경제거 완료!`);
     } catch (err) {
-      console.error("🚨 워커 AI 배경제거 오류:", err);
+      console.error("🚨 배경제거 오류:", err);
       alert("배경제거 중 오류가 발생했습니다.");
     }
   };
