@@ -7,6 +7,7 @@ export default function DenoiseButton({ selectedImages = [], disabled }) {
       return alert("이미지를 하나 이상 선택하세요!");
 
     try {
+      const processedResults = [];
       for (const [index, img] of selectedImages.entries()) {
         const imgSrc = getImageURL(img);
         if (!imgSrc) continue;
@@ -29,19 +30,24 @@ export default function DenoiseButton({ selectedImages = [], disabled }) {
           type: "image/png",
         });
 
-        // ✅ 처리결과 섹션에 반영
-        window.dispatchEvent(
-          new CustomEvent("imageProcessed", {
-            detail: {
-              file,
-              thumbnail: cleanBase64,
-              meta: { label: "노이즈 제거" },
-            },
-          })
-        );
+        processedResults.push({ file, dataUrl: cleanBase64 });
       }
 
-      alert(`✅ ${selectedImages.length}개의 이미지 노이즈 제거 완료!`);
+      processedResults.forEach(({ file, dataUrl }) => {
+        requestAnimationFrame(() => {
+          window.dispatchEvent(
+            new CustomEvent("imageProcessed", {
+              detail: {
+                file,
+                thumbnail: dataUrl,
+                meta: { label: "노이즈제거" },
+              },
+            })
+          );
+        });
+      });
+
+      alert(`✅ ${processedResults.length}개의 이미지 처리 완료!`);
     } catch (err) {
       console.error("🚨 노이즈 제거 오류:", err);
       alert("노이즈 제거 중 오류가 발생했습니다.");
