@@ -32,14 +32,17 @@ export default function KeywordAnalyzeTool({
       const imageBase64 = await blobToBase64(blob);
 
       // ✅ 서버에 단일 이미지 전달
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64 }),
-      });
+     const res = await fetch("/api/analyze", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ imageBase64List }),
+});
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "분석 실패");
+const data = await res.json();
+console.log("✅ 분석 결과:", data); // ✅ 여기에 추가
+
+if (!data.success) throw new Error(data.error || "분석 실패");
+
 
       // ✅ 서버 응답 결과 반영
       setTitle("키워드 분석 결과");
