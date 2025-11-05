@@ -3,9 +3,10 @@
   "include": [
     "/api/analyze",
     "/api/remove-bg",
-    "/api/remove-bg-crop",
+    "/api/crop-auto",
     "/api/denoise",
-    "/api/svg"
+    "/api/svg",
+    "/api/gif"
   ],
   "exclude": []
 }
