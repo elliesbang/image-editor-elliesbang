@@ -3,35 +3,25 @@ export async function onRequestPost({ request, env }) {
     const { imageBase64 } = await request.json();
 
     if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "이미지 데이터가 없습니다." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "이미지 데이터가 없습니다." }),
+        { status: 400 }
+      );
     }
 
-    // ✅ Cloudflare AI 모델 호출
-    const aiResult = await env.AI.run("@cf/unum/u2net", {
+    // ✅ 최신 Cloudflare AI 모델명
+    const result = await env.AI.run("@cf/unum/u2net-portrait", {
       image: imageBase64.startsWith("data:")
         ? imageBase64
         : `data:image/png;base64,${imageBase64}`,
     });
 
-    // ✅ AI 응답 확인 (직접 구조 출력)
-    console.log("🚀 AI 응답:", JSON.stringify(aiResult).slice(0, 200));
-
-    // ✅ Cloudflare AI는 보통 image 속성으로 반환
-    const resultImage =
-      aiResult.image || aiResult.output || aiResult.result || aiResult.data;
-
-    if (!resultImage) {
-      throw new Error("AI 응답에 이미지 데이터가 없습니다.");
+    if (!result || !result.image) {
+      throw new Error("AI 응답에 이미지 필드가 없습니다.");
     }
 
-    // ✅ Base64 prefix 강제 추가
     const prefixed =
-      resultImage.startsWith("data:") ?
-      resultImage :
-      `data:image/png;base64,${resultImage}`;
+      result.image.startsWith("data:") ? result.image : `data:image/png;base64,${result.image}`;
 
     return new Response(
       JSON.stringify({
@@ -42,7 +32,6 @@ export async function onRequestPost({ request, env }) {
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("🚨 remove-bg 오류:", err);
     return new Response(
       JSON.stringify({ error: `remove-bg 오류: ${err.message}` }),
       { status: 500, headers: { "Content-Type": "application/json" } }
