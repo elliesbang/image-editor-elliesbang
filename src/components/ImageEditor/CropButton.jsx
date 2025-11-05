@@ -16,19 +16,23 @@ const autoCrop = (src) =>
     const img = new Image();
     img.src = src;
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
+      const w = img.width, h = img.height;
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
       ctx.drawImage(img, 0, 0);
-      const { data } = ctx.getImageData(0, 0, img.width, img.height);
 
-      let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
+      const { data } = ctx.getImageData(0, 0, w, h);
 
-      for (let y = 0; y < img.height; y++) {
-        for (let x = 0; x < img.width; x++) {
-          const a = data[(y * img.width + x) * 4 + 3];
-          if (a > 2) {
+      let minX = w, minY = h, maxX = 0, maxY = 0;
+
+      // 🔥 기존 alpha>2 → alpha>10로 상향 (잔 fringe 제거)
+      const alphaThreshold = 10;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const a = data[(y * w + x) * 4 + 3];
+          if (a > alphaThreshold) {
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
             maxX = Math.max(maxX, x);
@@ -37,12 +41,20 @@ const autoCrop = (src) =>
         }
       }
 
-      const w = maxX - minX + 1;
-      const h = maxY - minY + 1;
+      // 🔥 여백 1px만 허용(필요시 조절)
+      const pad = 1;
+      minX = Math.max(0, minX - pad);
+      minY = Math.max(0, minY - pad);
+      maxX = Math.min(w - 1, maxX + pad);
+      maxY = Math.min(h - 1, maxY + pad);
+
+      const cropW = maxX - minX + 1;
+      const cropH = maxY - minY + 1;
+
       const out = document.createElement("canvas");
-      out.width = w;
-      out.height = h;
-      out.getContext("2d").drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
+      out.width = cropW; out.height = cropH;
+      out.getContext("2d").drawImage(c, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
       resolve(out.toDataURL("image/png"));
     };
   });
