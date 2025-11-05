@@ -28,7 +28,6 @@ const ImageUpload = ({
 
     const updated = [...images, ...newImages];
     setImages(updated);
-    setSelectedImages([]); // ✅ 업로드 시 자동 선택 방지
     if (newImages.length > 0) setSelectedImage(newImages[0]);
 
     // ❌ 업로드 시 처리결과 섹션 자동 반영 방지
