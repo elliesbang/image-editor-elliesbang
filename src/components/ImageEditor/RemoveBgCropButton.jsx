@@ -18,17 +18,14 @@ export default function RemoveBgCropButton({ selectedImage, disabled }) {
     try {
       console.log("🚀 서버로 전송 중:", base64.slice(0, 50) + "...");
 
-      const res = await fetch("/api/remove-bg-crop", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64 }),
-      });
+      const res = await fetch("/api/remove-bg", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ imageBase64: base64 }),
+});
 
-      // ✅ 응답 검사
-      const text = await res.text();
-      console.log("📥 서버 응답:", text);
-
-      const data = JSON.parse(text);
+const data = await res.json();
+if (!res.ok || !data.image) throw new Error("배경제거 실패 또는 이미지 없음");
 
       if (!res.ok) {
         alert(`서버 오류 (${res.status})`);
@@ -39,7 +36,8 @@ export default function RemoveBgCropButton({ selectedImage, disabled }) {
       if (!data.image) throw new Error("서버에서 결과 이미지를 반환하지 않았습니다.");
 
       // ✅ Blob/File 변환
-      const fileBlob = await fetch(data.image).then((r) => r.blob());
+      const croppedBase64 = await autoCrop(data.image);
+const fileBlob = await fetch(croppedBase64).then((r) => r.blob());
       const file = new File([fileBlob], "bg_crop.png", { type: "image/png" });
 
       // ✅ 전역 이벤트로 결과 전달
