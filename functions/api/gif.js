@@ -1,34 +1,45 @@
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const formData = await request.formData();
-    const file = formData.get("image");
-    if (!file)
-      return new Response(JSON.stringify({ error: "이미지를 업로드하세요." }), { status: 400 });
+    const { imageBase64, loop = true } = await request.json();
 
-    const apiKey = env.OPENAI_API_KEY;
-    const forward = new FormData();
-    forward.append("model", "dall-e-2");
-    forward.append("image", file);
-    forward.append(
-      "prompt",
-      "이미지를 기반으로 빛의 잔상과 반짝임이 느껴지는 GIF 스타일의 예술 이미지를 만들어 주세요."
+    if (!imageBase64) {
+      return new Response(
+        JSON.stringify({ success: false, error: "이미지 데이터가 없습니다." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // ✅ Base64 → Binary
+    const clean = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    const bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
+
+    // ✅ 1️⃣ Cloudflare AI GIF 변환 모델 실행
+    const aiResponse = await env.AI.run("@cf/lykon/blink", {
+      image: [...bytes],
+      resize: { width: 700, height: null }, // 비율 유지
+      dpi: 72,
+      loop: loop ? 0 : 1, // 0 = infinite, 1 = once
+    });
+
+    if (!aiResponse?.output_gif) {
+      throw new Error("GIF 변환 실패");
+    }
+
+    // ✅ 결과 base64 가져오기
+    const gifBase64 = aiResponse.output_gif;
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        gif: `data:image/gif;base64,${gifBase64}`,
+      }),
+      { headers: { "Content-Type": "application/json" } }
     );
-
-    const res = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: forward,
-    });
-
-    const data = await res.json();
-    const result = data?.data?.[0]?.b64_json;
-    if (!result) throw new Error("OpenAI 응답에 결과 이미지가 없습니다.");
-
-    return new Response(JSON.stringify({ result }), {
-      headers: { "Content-Type": "application/json" },
-    });
   } catch (err) {
-    console.error("GIF Error:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    console.error("🚨 GIF 변환 오류:", err);
+    return new Response(
+      JSON.stringify({ success: false, error: err.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 };
