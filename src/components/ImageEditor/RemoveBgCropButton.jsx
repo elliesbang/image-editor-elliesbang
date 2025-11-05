@@ -7,89 +7,85 @@ export default function RemoveBgCropButton({ selectedImages = [], disabled }) {
       return alert("이미지를 하나 이상 선택하세요!");
 
     try {
-      await Promise.all(
-        selectedImages.map(async (img, idx) => {
-          const imgSrc = getImageURL(img);
-          if (!imgSrc) return;
+      for (const [index, img] of selectedImages.entries()) {
+        const imgSrc = getImageURL(img);
+        if (!imgSrc) continue;
 
-          // ✅ 1️⃣ 배경제거 (현재 remove-bg.js와 동일 구조)
-          const response = await fetch("/api/remove-bg", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageBase64: imgSrc }),
-          });
+        // ✅ Cloudflare AI 배경제거 API 호출
+        const res = await fetch("/api/remove-bg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageBase64: imgSrc }),
+        });
 
-          if (!response.ok) throw new Error("배경제거 실패");
-          const { image: bgRemovedBase64 } = await response.json();
-          if (!bgRemovedBase64) throw new Error("배경제거 결과 없음");
+        const data = await res.json();
+        if (!data.success || !data.image) {
+          console.error("🚨 remove-bg 실패:", data);
+          continue;
+        }
 
-          // ✅ 2️⃣ 자동 크롭 (CropButton의 최신 버전 그대로 적용)
-          const autoCrop = (src) =>
-            new Promise((resolve) => {
-              const image = new Image();
-              image.src = src;
-              image.onload = () => {
-                const w = image.width, h = image.height;
-                const c = document.createElement("canvas");
-                c.width = w; c.height = h;
-                const ctx = c.getContext("2d");
-                ctx.drawImage(image, 0, 0);
+        const base64 = data.image;
 
-                const { data } = ctx.getImageData(0, 0, w, h);
-                let minX = w, minY = h, maxX = 0, maxY = 0;
-                const alphaThreshold = 10; // 🔥 투명도 기준 강화 (fringe 제거)
+        // ✅ AI가 반환한 투명 배경 이미지를 자동 크롭
+        const autoCrop = async (src) =>
+          new Promise((resolve) => {
+            const image = new Image();
+            image.src = src;
+            image.onload = () => {
+              const w = image.width, h = image.height;
+              const canvas = document.createElement("canvas");
+              canvas.width = w; canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(image, 0, 0);
 
-                for (let y = 0; y < h; y++) {
-                  for (let x = 0; x < w; x++) {
-                    const a = data[(y * w + x) * 4 + 3];
-                    if (a > alphaThreshold) {
-                      minX = Math.min(minX, x);
-                      minY = Math.min(minY, y);
-                      maxX = Math.max(maxX, x);
-                      maxY = Math.max(maxY, y);
-                    }
+              const imgData = ctx.getImageData(0, 0, w, h);
+              const data = imgData.data;
+
+              let minX = w, minY = h, maxX = 0, maxY = 0;
+              for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                  const alpha = data[(y * w + x) * 4 + 3];
+                  if (alpha > 10) { // 피사체 픽셀
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
                   }
                 }
+              }
 
-                const pad = 1; // 🔥 여백 1px만 허용
-                minX = Math.max(0, minX - pad);
-                minY = Math.max(0, minY - pad);
-                maxX = Math.min(w - 1, maxX + pad);
-                maxY = Math.min(h - 1, maxY + pad);
+              const cropW = maxX - minX + 1;
+              const cropH = maxY - minY + 1;
 
-                const cropW = maxX - minX + 1;
-                const cropH = maxY - minY + 1;
+              const out = document.createElement("canvas");
+              out.width = cropW;
+              out.height = cropH;
+              out
+                .getContext("2d")
+                .drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
 
-                const out = document.createElement("canvas");
-                out.width = cropW; out.height = cropH;
-                out.getContext("2d").drawImage(c, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
-
-                resolve(out.toDataURL("image/png"));
-              };
-            });
-
-          const croppedBase64Full = await autoCrop(bgRemovedBase64);
-
-          // ✅ 3️⃣ Blob + File 변환
-          const blob = await fetch(croppedBase64Full).then((r) => r.blob());
-          const file = new File([blob], `removed_cropped_${idx + 1}.png`, {
-            type: "image/png",
+              resolve(out.toDataURL("image/png"));
+            };
           });
 
-          // ✅ 4️⃣ 처리결과 섹션에 전달 (ProcessResult.jsx가 자동 수신)
-          requestAnimationFrame(() => {
-            window.dispatchEvent(
-              new CustomEvent("imageProcessed", {
-                detail: {
-                  file,
-                  thumbnail: croppedBase64Full,
-                  meta: { label: "배경제거+크롭" },
-                },
-              })
-            );
-          });
-        })
-      );
+        const croppedBase64 = await autoCrop(base64);
+
+        // ✅ Blob 변환 + ProcessResult 전송
+        const blob = await fetch(croppedBase64).then((r) => r.blob());
+        const file = new File([blob], `removed_cropped_${index + 1}.png`, {
+          type: "image/png",
+        });
+
+        window.dispatchEvent(
+          new CustomEvent("imageProcessed", {
+            detail: {
+              file,
+              thumbnail: croppedBase64,
+              meta: { label: "배경제거+크롭" },
+            },
+          })
+        );
+      }
 
       alert(`✅ ${selectedImages.length}개의 이미지 배경제거+크롭 완료!`);
     } catch (err) {
@@ -100,7 +96,7 @@ export default function RemoveBgCropButton({ selectedImages = [], disabled }) {
 
   return (
     <button className="btn" onClick={handleClick} disabled={disabled}>
-      배경제거 + 크롭
+      배경제거+크롭
     </button>
   );
 }
