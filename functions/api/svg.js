@@ -1,54 +1,111 @@
+import { optimize } from "svgo";
+
+// ✅ Cloudflare Pages Functions entrypoint
 export const onRequestPost = async ({ request, env }) => {
   try {
-    // ✅ 1. 프론트에서 보낸 FormData 받기
-    const formData = await request.formData();
-    const file = formData.get("image");
+    const { imageBase64, maxColors = 6 } = await request.json();
 
-    if (!file) {
+    if (!imageBase64) {
       return new Response(
-        JSON.stringify({ error: "이미지를 선택해주세요." }),
-        { status: 400 }
+        JSON.stringify({ success: false, error: "이미지 데이터가 없습니다." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const apiKey = env.OPENAI_API_KEY;
+    // ✅ Base64 → Uint8Array 변환
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    const imageBytes = Uint8Array.from(atob(cleanBase64), (c) => c.charCodeAt(0));
 
-    // ✅ 2. OpenAI API 전송용 FormData 구성
-    const forward = new FormData();
-    forward.append("model", "gpt-image-1");
-    forward.append("image", file);
-    forward.append(
-      "prompt",
-      `
-      주어진 이미지를 바탕으로,
-      실제 움직이지는 않지만 빛의 잔상, 흔들림, 반짝임, 잔광 효과가 있는
-      예술적 GIF 느낌의 이미지를 생성하세요.
-      `
-    );
-
-    // ✅ 3. OpenAI API 호출
-    const res = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: forward,
+    // ✅ Workers AI 실행 (Cloudflare 내부 모델)
+    // 참고: https://developers.cloudflare.com/workers-ai/models/
+    const aiResponse = await env.AI.run("@cf/image-to-vector", {
+      image: [...imageBytes],
+      color_limit: Math.min(Math.max(maxColors, 1), 6), // 1~6 색 제한
     });
 
-    const data = await res.json();
-    const result = data?.data?.[0]?.b64_json;
+    if (!aiResponse?.output_svg) {
+      throw new Error("AI SVG 변환 실패");
+    }
 
-    if (!result) throw new Error("OpenAI 응답에 결과 이미지가 없습니다.");
+    let svg = aiResponse.output_svg;
 
-    // ✅ 4. 브라우저로 반환
-    return new Response(JSON.stringify({ result }), {
-      headers: { "Content-Type": "application/json" },
+    // ✅ 불필요한 stroke, fill-rule 등 제거
+    svg = svg
+      .replace(/\s(stroke(-width)?|fill-rule|clip-path|opacity)="[^"]*"/g, "")
+      .replace(/\s+/g, " ");
+
+    // ✅ viewBox 보장
+    if (!/viewBox=/.test(svg)) {
+      const match = svg.match(/width="(\d+)" height="(\d+)"/);
+      if (match) {
+        const [, w, h] = match;
+        svg = svg.replace(
+          /<svg/,
+          `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"`
+        );
+      }
+    }
+
+    // ✅ 배경 fill 제거 (투명 유지)
+    svg = svg.replace(/<rect[^>]+fill="[^"]+"[^>]*>/g, "");
+
+    // ✅ svgo로 최적화 (150KB 이하 압축 목표)
+    let optimized = optimize(svg, {
+      multipass: true,
+      floatPrecision: 2,
+      plugins: [
+        "removeDimensions",
+        "removeMetadata",
+        "removeTitle",
+        "removeDesc",
+        "removeRasterImages",
+        "removeScriptElement",
+        "collapseGroups",
+        "convertShapeToPath",
+        {
+          name: "cleanupNumericValues",
+          params: { floatPrecision: 2 },
+        },
+      ],
     });
-  } catch (err) {
-    console.error("GIF 변환 오류:", err);
+
+    svg = optimized.data;
+
+    // ✅ 크기 제한 확인 (150KB 초과 시 색상 절반으로 줄여 재시도)
+    const encoder = new TextEncoder();
+    let svgBytes = encoder.encode(svg);
+    if (svgBytes.length > 150 * 1024) {
+      const reduced = Math.max(1, Math.floor(maxColors / 2));
+      const retry = await env.AI.run("@cf/image-to-vector", {
+        image: [...imageBytes],
+        color_limit: reduced,
+      });
+      const retriedSvg = optimize(retry.output_svg, { multipass: true }).data;
+      svg = retriedSvg;
+    }
+
+    // ✅ 최종 응답
     return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500 }
+      JSON.stringify({
+        success: true,
+        svg,
+        meta: {
+          colors: maxColors,
+          size_kb: Math.round(svg.length / 1024),
+          transparent: true,
+          viewBox: /viewBox=/.test(svg),
+        },
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("🚨 SVG 변환 오류:", err);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: err.message || "서버 내부 오류",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 };
