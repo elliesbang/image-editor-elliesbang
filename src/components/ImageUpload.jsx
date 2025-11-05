@@ -27,12 +27,11 @@ const ImageUpload = ({
       }));
 
     const updated = [...images, ...newImages];
-setImages(updated);
+    setImages(updated);
+    setSelectedImages(updated); // ✅ 업로드 후 자동 전체 선택 (사용자는 나중에 해제 가능)
 
-- // setSelectedImages([]); // ❌ 선택 비우기 제거
-+ setSelectedImages(updated); // ✅ 업로드 후 자동으로 전체 선택 (사용자가 나중에 해제 가능)
-
-if (newImages.length > 0) setSelectedImage(newImages[0]);
+    if (newImages.length > 0) setSelectedImage(newImages[0]);
+  };
 
   // ✅ 파일 input 업로드
   const handleFileChange = (e) => handleImageUpload(e.target.files);
@@ -78,7 +77,7 @@ if (newImages.length > 0) setSelectedImage(newImages[0]);
 
   // ✅ 전체 선택 / 해제 / 삭제
   const handleSelectAll = () => setSelectedImages([...images]);
-  const handleDeselectAll = () => setSelectedImages([]);// ❌ 선택 비움 제거
+  const handleDeselectAll = () => setSelectedImages([]); // ✅ 전체 해제 가능
   const handleDeleteAll = () => {
     if (window.confirm("모든 이미지를 삭제하시겠습니까?")) {
       images.forEach((img) => URL.revokeObjectURL(img.thumbnail)); // ✅ 메모리 정리
@@ -147,7 +146,9 @@ if (newImages.length > 0) setSelectedImage(newImages[0]);
         {images.map((img, i) => (
           <div
             key={img.id || i}
-            className={`thumb-wrapper ${selectedImages.includes(img) ? "selected" : ""}`}
+            className={`thumb-wrapper ${
+              selectedImages.includes(img) ? "selected" : ""
+            }`}
             onClick={() => handleSelectImage(img)}
           >
             <div className="thumb-inner">
