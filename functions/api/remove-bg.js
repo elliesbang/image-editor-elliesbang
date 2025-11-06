@@ -14,7 +14,7 @@ export async function onRequestPost({ request, env }) {
 
     // ✅ Hugging Face 모델 (briaai/RMBG-1.4)
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/briaai/RMBG-1.4",
+      "https://router.huggingface.co/hf-inference/models/briaai/RMBG-1.4",
       {
         method: "POST",
         headers: {
