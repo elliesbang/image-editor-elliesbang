@@ -1,6 +1,6 @@
 import { defineFunction } from "@aws-amplify/backend";
 
-export const denoiseFunction = defineFunction({
-  name: "denoise",
+export const analyzeFunction = defineFunction({
+  name: "analyze",
   entry: "./handler.ts",
 });

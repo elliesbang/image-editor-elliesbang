@@ -1,12 +1,20 @@
+import sharp from "sharp";
+
 export const handler = async (event) => {
   try {
-    const { frames } = JSON.parse(event.body || "{}"); // base64 배열
-    if (!frames || !Array.isArray(frames))
-      return { statusCode: 400, body: JSON.stringify({ error: "GIF 프레임이 없습니다." }) };
+    const { imageBase64 } = JSON.parse(event.body || "{}");
+    if (!imageBase64) return { statusCode: 400, body: JSON.stringify({ error: "이미지가 없습니다." }) };
 
-    return { statusCode: 200, body: JSON.stringify({ message: "convert-gif 함수 호출 성공" }) };
-  } catch (error) {
-    console.error("convert-gif error:", error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    const img = Buffer.from(imageBase64.split(",")[1], "base64");
+    const gifBuffer = await sharp(img).gif().toBuffer();
+
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: `data:image/gif;base64,${gifBuffer.toString("base64")}` }),
+    };
+  } catch (err) {
+    console.error("convert-gif error:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };

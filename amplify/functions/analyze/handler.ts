@@ -5,34 +5,28 @@ const client = new BedrockRuntimeClient({ region: "us-east-1" });
 export const handler = async (event) => {
   try {
     const { imageBase64 } = JSON.parse(event.body || "{}");
-
-    if (!imageBase64) {
-      return { statusCode: 400, body: JSON.stringify({ error: "이미지 데이터가 없습니다." }) };
-    }
+    if (!imageBase64) return { statusCode: 400, body: JSON.stringify({ error: "이미지가 없습니다." }) };
 
     const command = new InvokeModelCommand({
-      modelId: "stability.stable-diffusion-xl-v1",
+      modelId: "amazon.titan-image-generator-v1",
       contentType: "application/json",
       accept: "application/json",
       body: JSON.stringify({
-        taskType: "imageToImage",
+        taskType: "imageCaptioning",
         inputImage: imageBase64,
-        prompt: "Remove the background and output subject with transparent background.",
-        imageGenerationConfig: { numberOfImages: 1, quality: "high" },
       }),
     });
 
     const res = await client.send(command);
     const parsed = JSON.parse(new TextDecoder().decode(res.body));
-    const base64Image = parsed?.artifacts?.[0]?.base64 ?? parsed?.images?.[0]?.base64;
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: `data:image/png;base64,${base64Image}` }),
+      body: JSON.stringify({ keywords: parsed?.captions ?? [] }),
     };
   } catch (err) {
-    console.error("remove-bg error:", err);
+    console.error("analyze error:", err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
