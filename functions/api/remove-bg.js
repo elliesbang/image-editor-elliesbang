@@ -1,58 +1,45 @@
-export async function onRequestPost({ request, env }) {
+import AWS from "aws-sdk";
+import sharp from "sharp";
+
+const rekognition = new AWS.Rekognition();
+
+export const handler = async (event) => {
   try {
-    const { imageBase64 } = await request.json();
+    const { imageBase64 } = JSON.parse(event.body);
+    const buffer = Buffer.from(imageBase64.split(",")[1], "base64");
 
-    if (!imageBase64) {
-      return new Response(
-        JSON.stringify({ error: "이미지 데이터가 없습니다." }),
-        { status: 400 }
-      );
-    }
+    const result = await rekognition.detectLabels({
+      Image: { Bytes: buffer },
+      MinConfidence: 70,
+    }).promise();
 
-    // Base64 → Binary 변환
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    const binary = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+    const mainObj = result.Labels.flatMap(l => l.Instances || [])
+      .sort((a, b) => b.Confidence - a.Confidence)[0];
 
-    // ✅ Gradio Space용 요청 (briaai/RMBG-1.4)
-    const formData = new FormData();
-    const blob = new Blob([binary], { type: "image/png" });
-    formData.append("image", blob, "input.png");
+    if (!mainObj) throw new Error("피사체를 찾지 못했습니다.");
 
-    const response = await fetch("https://briaai-rmbg-14.hf.space/run/predict", {
-      method: "POST",
-      body: formData, // ✅ multipart/form-data
-    });
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+    const left = Math.floor(mainObj.BoundingBox.Left * metadata.width);
+    const top = Math.floor(mainObj.BoundingBox.Top * metadata.height);
+    const width = Math.floor(mainObj.BoundingBox.Width * metadata.width);
+    const height = Math.floor(mainObj.BoundingBox.Height * metadata.height);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Space API 오류: ${response.status} ${errorText}`);
-    }
+    const cropped = await image.extract({ left, top, width, height }).toBuffer();
+    const transparent = await sharp(cropped)
+      .flatten({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .toBuffer();
 
-    const result = await response.json();
-
-    // ✅ 결과 Base64 이미지 추출
-    const outputBase64 = result.data?.[0];
-    if (!outputBase64) {
-      throw new Error("배경제거 결과를 불러오지 못했습니다.");
-    }
-
-    // Base64 → Binary 변환 후 반환
-    const outputBuffer = Uint8Array.from(
-      atob(outputBase64.split(",")[1]),
-      (c) => c.charCodeAt(0)
-    );
-
-    return new Response(outputBuffer, {
-      headers: { "Content-Type": "image/png" },
-    });
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        success: true,
+        result: `data:image/png;base64,${transparent.toString("base64")}`,
+      }),
+    };
   } catch (err) {
-    console.error("🚨 remove-bg 오류:", err);
-    return new Response(
-      JSON.stringify({ error: `remove-bg 오류: ${err.message}` }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    console.error("remove-bg 오류:", err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
-}
+};
