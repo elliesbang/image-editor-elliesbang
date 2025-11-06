@@ -17,7 +17,7 @@ export const onRequestPost = async ({ request, env }) => {
 
     // ✅ Hugging Face Florence-2 Auto-Crop 모델 호출
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/Wi-zz/florence-2-auto-crop",
+      "https://router.huggingface.co/hf-inference/models/microsoft/Florence-2-auto-crop",
       {
         method: "POST",
         headers: {
