@@ -4,24 +4,18 @@ export async function onRequestPost({ request, env }) {
     if (!imageBase64)
       return new Response(JSON.stringify({ error: "이미지 데이터가 없습니다." }), { status: 400 });
 
-    // base64 → Blob 변환
+    // Base64 → 바이너리 변환
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const binary = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-    const blob = new Blob([binary], { type: "image/png" });
 
-    // ✅ 최신 Cloudflare AI 모델명
-    const result = await env.AI.run("@cf/unum/u2net-hd", { image: blob });
+    // ✅ 올바른 모델명 (u2net)
+    const result = await env.AI.run("@cf/unum/u2net", { image: binary });
 
-    if (!result || !result.image) throw new Error("AI 응답에 이미지 필드가 없습니다.");
-
-    const prefixed =
-      result.image.startsWith("data:")
-        ? result.image
-        : `data:image/png;base64,${result.image}`;
-
-    return new Response(JSON.stringify({ success: true, image: prefixed, message: "✅ 배경제거 성공" }), {
-      headers: { "Content-Type": "application/json" },
+    // Cloudflare AI는 결과를 바로 binary로 반환함
+    return new Response(result, {
+      headers: { "Content-Type": "image/png" },
     });
+
   } catch (err) {
     console.error("🚨 remove-bg 오류:", err);
     return new Response(JSON.stringify({ error: `remove-bg 오류: ${err.message}` }), {
