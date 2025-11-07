@@ -2,10 +2,14 @@ name = "image-editor-elliesbang"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-# ✅ 정적 빌드 결과물
+# ✅ 정적 빌드 결과물 (Vite 빌드된 프론트)
 [assets]
 directory = "./dist"
 
-# ✅ AI 모델 연결
+# ✅ Cloudflare AI 모델 바인딩
 [ai]
 binding = "AI"
+
+# ✅ API 함수 폴더 위치 지정 (이 줄이 핵심!)
+[functions]
+directory = "functions"
