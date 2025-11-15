@@ -25,11 +25,13 @@ export function initNotion(env) {
   if (!token) {
     throw new Error("NOTION_TOKEN environment variable is missing.");
   }
+
   if (!notionClient || notionToken !== token) {
     notionClient = new Client({ auth: token });
     notionToken = token;
     databaseSchemaCache.clear();
   }
+
   return notionClient;
 }
 
@@ -43,6 +45,11 @@ export async function queryDB(databaseId, params = {}) {
   } catch (error) {
     throw normalizeNotionError(error);
   }
+}
+
+export async function querySingle(databaseId, filter) {
+  const response = await queryDB(databaseId, { filter, page_size: 1 });
+  return response.results?.[0] ?? null;
 }
 
 export async function createPage(databaseId, properties) {
@@ -262,16 +269,22 @@ export function buildSelectProperty(name) {
   };
 }
 
-export function successResponse(data, status = 200) {
-  return new Response(JSON.stringify({ success: true, data }), {
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
   });
 }
 
-export function errorResponse(message, status = 500) {
-  return new Response(JSON.stringify({ success: false, error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+export function successResponse(payload = {}, status = 200) {
+  const data = typeof payload === "object" && payload !== null ? payload : { data: payload };
+  return jsonResponse({ success: true, ...data }, status);
+}
+
+export function errorResponse(message, status = 500, details) {
+  const body = { success: false, error: message };
+  if (details !== undefined) {
+    body.details = details;
+  }
+  return jsonResponse(body, status);
 }

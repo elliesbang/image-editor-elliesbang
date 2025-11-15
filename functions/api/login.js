@@ -1,6 +1,6 @@
 import {
   initNotion,
-  queryDB,
+  querySingle,
   mapNotionPage,
   errorResponse,
   successResponse,
@@ -33,14 +33,10 @@ export async function onRequestPost({ request, env }) {
       return errorResponse("Invalid role provided.", 400);
     }
 
-    const response = await queryDB(databaseId, {
-      filter: {
-        property: "Email",
-        email: { equals: email },
-      },
+    const accountPage = await querySingle(databaseId, {
+      property: "Email",
+      email: { equals: email },
     });
-
-    const accountPage = response.results?.[0];
 
     if (!accountPage) {
       return errorResponse("Invalid email or password.", 401);
@@ -55,7 +51,7 @@ export async function onRequestPost({ request, env }) {
     if (user?.properties) {
       delete user.properties.Password;
     }
-    return successResponse({ user });
+    return successResponse({ role, user });
   } catch (error) {
     return errorResponse(error.message || "Failed to process login request.");
   }
