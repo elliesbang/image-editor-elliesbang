@@ -1,27 +1,29 @@
-import React from "react";
+import React, { useMemo } from "react";
+import classes from "../data/classData";
+import ClassroomListItem from "../components/ClassroomListItem";
 
-const modules = [
-  {
-    id: 1,
-    title: "Introduction to the Classroom",
-    description:
-      "Kick off the semester with expectations, course goals, and an overview of the tools available to students.",
-  },
-  {
-    id: 2,
-    title: "Project Collaboration",
-    description:
-      "Learn how to collaborate in real time using shared documents, breakout rooms, and peer review workflows.",
-  },
-  {
-    id: 3,
-    title: "Assessment & Feedback",
-    description:
-      "Understand the assessment schedule, grading rubric, and feedback cycles that will guide learning outcomes.",
-  },
+const ACCORDION_SECTIONS = [
+  { key: "skill", title: "스킬" },
+  { key: "money", title: "수익화" },
+  { key: "ai", title: "AI 창작" },
 ];
 
 const Classroom = () => {
+  const categorizedClasses = useMemo(
+    () => ({
+      skill: classes.filter(
+        ({ category, hidden }) => category === "skill" && hidden !== true
+      ),
+      money: classes.filter(
+        ({ category, hidden }) => category === "money" && hidden !== true
+      ),
+      ai: classes.filter(
+        ({ category, hidden }) => category === "ai" && hidden !== true
+      ),
+    }),
+    []
+  );
+
   return (
     <div className="classroom-page">
       <header className="classroom-hero">
@@ -46,12 +48,20 @@ const Classroom = () => {
           </ul>
         </section>
 
-        <section className="classroom-modules">
-          <h2>Learning Modules</h2>
-          {modules.map((module) => (
-            <article key={module.id} className="classroom-module">
-              <h3>{module.title}</h3>
-              <p>{module.description}</p>
+        <section className="classroom-accordion">
+          {ACCORDION_SECTIONS.map(({ key, title }) => (
+            <article
+              key={key}
+              className={`classroom-accordion__panel classroom-accordion__panel--${key}`}
+            >
+              <header className="classroom-accordion__header">
+                <h2>{title}</h2>
+              </header>
+              <ul className="classroom-accordion__list">
+                {categorizedClasses[key].map((classItem) => (
+                  <ClassroomListItem key={classItem.id} classInfo={classItem} />
+                ))}
+              </ul>
             </article>
           ))}
         </section>
