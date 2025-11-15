@@ -1,5 +1,6 @@
 import {
   initNotion,
+  queryDB,
   createPage,
   retrieveDatabase,
   getTitlePropertyName,
@@ -13,6 +14,76 @@ import {
   successResponse,
   errorResponse,
 } from "./utils/notion.js";
+
+export async function onRequestGet({ request, env }) {
+  try {
+    initNotion(env);
+    const response = await queryDB(env.DB_ASSIGNMENT);
+    let assignments = response.results.map(mapNotionPage);
+
+    const url = new URL(request.url);
+    const student = url.searchParams.get("student") || url.searchParams.get("studentName");
+    const week = url.searchParams.get("week");
+    const classroomId = url.searchParams.get("classroomId");
+
+    if (student) {
+      const keyword = student.toLowerCase();
+      assignments = assignments.filter((assignment) => {
+        const candidates = [
+          assignment.properties?.Student,
+          assignment.properties?.Name,
+          assignment.properties?.학생,
+          assignment.properties?.Learner,
+        ];
+        return candidates.some((value) => {
+          if (Array.isArray(value)) {
+            return value.some((entry) => String(entry).toLowerCase() === keyword);
+          }
+          if (typeof value === "string") {
+            return value.toLowerCase().includes(keyword);
+          }
+          return false;
+        });
+      });
+    }
+
+    if (week) {
+      assignments = assignments.filter((assignment) => {
+        const weekValue =
+          assignment.properties?.Week ??
+          assignment.properties?.주차 ??
+          assignment.properties?.차시 ??
+          assignment.properties?.Lesson;
+        if (typeof weekValue === "number") {
+          return Number(weekValue) === Number(week);
+        }
+        if (weekValue === undefined || weekValue === null) {
+          return false;
+        }
+        return String(weekValue).toLowerCase() === String(week).toLowerCase();
+      });
+    }
+
+    if (classroomId) {
+      const normalized = classroomId.toLowerCase();
+      assignments = assignments.filter((assignment) => {
+        const relation =
+          assignment.properties?.Classroom ??
+          assignment.properties?.Class ??
+          assignment.properties?.수업;
+        if (!relation) return false;
+        if (Array.isArray(relation)) {
+          return relation.some((entry) => String(entry).toLowerCase() === normalized);
+        }
+        return String(relation).toLowerCase() === normalized;
+      });
+    }
+
+    return successResponse({ assignments });
+  } catch (error) {
+    return errorResponse(error.message || "Failed to load assignments.");
+  }
+}
 
 export async function onRequestPost({ request, env }) {
   try {
@@ -47,7 +118,11 @@ export async function onRequestPost({ request, env }) {
       properties[linkPropertyName] = buildUrlProperty(link);
     }
 
-    const commentPropertyName = tryResolvePropertyName(schema, ["Comment", "Notes", "Feedback"], "rich_text");
+    const commentPropertyName = tryResolvePropertyName(
+      schema,
+      ["Comment", "Notes", "Feedback", "비고"],
+      "rich_text",
+    );
     if (commentPropertyName && comment) {
       properties[commentPropertyName] = buildRichTextProperty(comment);
     }

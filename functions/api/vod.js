@@ -14,11 +14,48 @@ import {
   errorResponse,
 } from "./utils/notion.js";
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   try {
     initNotion(env);
     const response = await queryDB(env.DB_VOD_VIDEO);
-    const videos = response.results.map(mapNotionPage);
+    let videos = response.results.map(mapNotionPage);
+
+    const url = new URL(request.url);
+    const category = url.searchParams.get("category");
+    const search = url.searchParams.get("q");
+    const limit = Number(url.searchParams.get("limit"));
+
+    if (category) {
+      const normalized = category.toLowerCase();
+      videos = videos.filter((video) => {
+        const value =
+          video.properties?.Category ??
+          video.properties?.카테고리 ??
+          video.properties?.Type;
+        if (!value) return false;
+        if (Array.isArray(value)) {
+          return value.some((entry) => String(entry).toLowerCase() === normalized);
+        }
+        return String(value).toLowerCase() === normalized;
+      });
+    }
+
+    if (search) {
+      const keyword = search.toLowerCase();
+      videos = videos.filter((video) => {
+        const title = video.properties?.Title ?? video.properties?.Name ?? "";
+        const description = video.properties?.Description ?? video.properties?.소개 ?? "";
+        return (
+          String(title).toLowerCase().includes(keyword) ||
+          String(description).toLowerCase().includes(keyword)
+        );
+      });
+    }
+
+    if (Number.isFinite(limit) && limit > 0) {
+      videos = videos.slice(0, limit);
+    }
+
     return successResponse({ videos });
   } catch (error) {
     return errorResponse(error.message || "Failed to load VOD content.");
