@@ -1,6 +1,6 @@
-export async function handler(event) {
+export async function handler() {
   return {
     statusCode: 200,
-    body: JSON.stringify({ success: true, metrics: {}, classrooms: {}, assignments: [], feedbacks: [], notices: [], recentActivities: [], activityLogs: [] }),
+    body: JSON.stringify({ success: true, role: "admin", message: "Admin login available" }),
   };
 }
