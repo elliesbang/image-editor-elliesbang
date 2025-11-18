@@ -8,12 +8,12 @@ export const MODELS = {
 };
 
 export const API_ENDPOINTS = {
-  REMOVE_BG: "/api/remove-bg",
-  CROP: "/api/crop-auto",
-  DENOISE: "/api/denoise",
-  SVG: "/api/svg",
-  GIF: "/api/gif",
-  KEYWORD: "/api/analyze",
+  REMOVE_BG: "/.netlify/functions/removeBg",
+  CROP: "/.netlify/functions/convert",
+  DENOISE: "/.netlify/functions/convert",
+  SVG: "/.netlify/functions/convert",
+  GIF: "/.netlify/functions/convert",
+  KEYWORD: "/.netlify/functions/convert",
 };
 
 export const ALERT_MESSAGES = {

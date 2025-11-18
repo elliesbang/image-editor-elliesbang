@@ -38,7 +38,7 @@ export default function AdminMyPage({ user }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/admin")
+    fetch("/.netlify/functions/admin")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
