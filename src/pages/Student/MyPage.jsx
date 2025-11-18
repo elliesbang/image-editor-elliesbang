@@ -133,10 +133,10 @@ export default function StudentMyPage({ user }) {
     const encodedName = encodeURIComponent(studentName);
 
     Promise.all([
-      fetch(`/api/classroom?studentName=${encodedName}`).then((res) => res.json()),
-      fetch(`/api/assignment-submit?student=${encodedName}`).then((res) => res.json()),
-      fetch(`/api/feedback?student=${encodedName}`).then((res) => res.json()),
-      fetch(`/api/course`).then((res) => res.json()),
+      fetch(`/.netlify/functions/classroom?studentName=${encodedName}`).then((res) => res.json()),
+      fetch(`/.netlify/functions/assignment-submit?student=${encodedName}`).then((res) => res.json()),
+      fetch(`/.netlify/functions/feedback?student=${encodedName}`).then((res) => res.json()),
+      fetch(`/.netlify/functions/course`).then((res) => res.json()),
     ])
       .then(([classroomData, assignmentData, feedbackData, courseData]) => {
         if (classroomData.success) {

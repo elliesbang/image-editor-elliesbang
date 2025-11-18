@@ -71,7 +71,7 @@ export default function VodMyPage({ user }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/vod")
+    fetch("/.netlify/functions/vod")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
