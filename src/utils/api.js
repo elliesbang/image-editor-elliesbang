@@ -1,4 +1,4 @@
-export const API_BASE = "https://image-editor-elliesbang.pages.dev/api";
+export const API_BASE = "/.netlify/functions";
 
 async function post(endpoint, payload, responseType = "blob") {
   const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -32,25 +32,25 @@ async function safeReadError(response) {
 }
 
 export async function removeBackground(image) {
-  return post("/remove-bg", { image });
+  return post("/removeBg", { image });
 }
 
 export async function cropImage(image) {
-  return post("/crop", { image });
+  return post("/convert", { action: "crop", image });
 }
 
 export async function removeBackgroundAndCrop(image) {
-  return post("/remove-bg-crop", { image });
+  return post("/removeBg", { image, crop: true });
 }
 
 export async function denoiseImage(image) {
-  return post("/denoise", { image });
+  return post("/convert", { action: "denoise", image });
 }
 
 export async function convertToSvg(image) {
-  return post("/to-svg", { image }, "text");
+  return post("/convert", { action: "svg", image }, "text");
 }
 
 export async function convertToGif(frames) {
-  return post("/to-gif", { frames });
+  return post("/convert", { action: "gif", frames });
 }
